@@ -19,9 +19,10 @@ def get_local_ip():
     return local_ip
 
 class StreamClient:
-    def __init__(self, id, server: tuple, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+    def __init__(self, id, server: tuple, outputDevice=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         self.id = id
         self.server = server
+        self.outputDevice = outputDevice
         self.chunk = chunk
         self.format = format
         self.channels = channels
@@ -36,7 +37,8 @@ class StreamClient:
                                       channels=self.channels,
                                       rate=self.rate,
                                       output=True,
-                                      frames_per_buffer=self.chunk)
+                                      frames_per_buffer=self.chunk,
+                                      output_device_index=self.outputDevice)
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socketAddress = self.server
         print('Connecting to server at', self.socketAddress)

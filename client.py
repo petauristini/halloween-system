@@ -1,6 +1,10 @@
 from flask import Flask, request
+import json
 import AudioStream
 import AudioFile
+
+with open('config.json') as configFile:
+    config = json.load(configFile)
 
 app = Flask(__name__)       
 
@@ -42,7 +46,7 @@ def create_stream():
     if audioStreamHandler.id_exists(id):
         return f'Stream with id: {id} already exists', 400
     try:
-        audioStreamHandler.add(id, server=('10.239.44.2', 7000))
+        audioStreamHandler.add(id, server=(config["server"]["ip"], config["server"]["port"]), outputDevice=config["outputDevice"])
         return f"Successfully created Stream with id {id}", 200
     except Exception as e:
         return f"Error: {e}", 500
