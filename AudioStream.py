@@ -37,8 +37,7 @@ class StreamClient:
                                       channels=self.channels,
                                       rate=self.rate,
                                       output=True,
-                                      frames_per_buffer=self.chunk,
-                                      output_device_index=self.outputDevice)
+                                      frames_per_buffer=self.chunk)
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socketAddress = self.server
         print('Connecting to server at', self.socketAddress)
@@ -109,13 +108,13 @@ class StreamClientHandler:
     def __init__(self):
         self.streamClients = {}
 
-    def add(self, id, server, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+    def add(self, id, server, outputDevice=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         if id is None:
             raise ValueError("ID cannot be None")
         elif self.id_exists(id):
             raise ValueError("ID already in use")
         else:
-            self.streamClients[id] = StreamClient(id, server, chunk, format, channels, rate)
+            self.streamClients[id] = StreamClient(id, server, outputDevice, chunk, format, channels, rate)
         
     def start(self, id):
         if self.id_exists(id):
@@ -140,8 +139,9 @@ class StreamClientHandler:
 
 class StreamServer:
 
-    def __init__(self, id, port, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
-        self.id = id
+    def __init__(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+        self.inputId = inputId
+        self.inputName = inputName
         self.ip = get_local_ip()
         self.port = port
         self.chunk = chunk
@@ -156,6 +156,7 @@ class StreamServer:
     def audio_stream(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_socket.bind((self.ip, self.port))
+        self.port = server_socket.getsockname()[1]
         server_socket.setblocking(False)
 
         audio = pyaudio.PyAudio()
@@ -203,11 +204,12 @@ class StreamServer:
 
     def start(self):
         if self.serverThread and self.serverThread.is_alive():
-            print(f"Stream with id {self.id} already exists")
+            print(f"Stream with inputId {self.inputId} already exists")
         try:
             self.stopThreadFlag.clear()
             self.serverThread = threading.Thread(target=self.audio_stream, args=())
             self.serverThread.start()
+            print(f"Server {self.inputId} : {self.inputName} started")
         except:
             print ("Error: unable to create thread")     
 
@@ -215,9 +217,9 @@ class StreamServer:
         if not self.stopThreadFlag.is_set():
             self.stopThreadFlag.set()
             self.serverThread.join()
-            print(f"Server with id {self.id} stopped")
+            print(f"Server {self.inputId} : {self.inputName} stopped")
         else:
-            print(f"Server with id {self.id} already stopped")
+            print(f"Server {self.inputId} : {self.inputName} already stopped")
     
     def on_exit(self):
         if self.serverThread and self.serverThread.is_alive():
@@ -228,38 +230,45 @@ class StreamServerHandler:
     def __init__(self):
         self.servers = {}
 
-    def add(self, id, port, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
-        if id is None:
-            raise ValueError("ID cannot be None")
-        elif self.id_exists(id):
-            raise ValueError("ID already in use")
+    def add(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+        if inputId is None:
+            raise ValueError("inputId cannot be None")
+        elif self.input_in_use(inputId):
+            raise ValueError("input already in use")
         else:
-            self.servers[id] = StreamServer(id, port, chunk, format, channels, rate)
+            self.servers[inputId] = StreamServer(inputId, inputName, port, chunk, format, channels, rate)
 
-    def start(self, id):
-        if self.id_exists(id):
-            self.servers[id].start()
+    def start(self, inputId):
+        if self.input_in_use(inputId):
+            self.servers[inputId].start()
         else:
-            raise ValueError("ID not found")
+            raise ValueError("inputId not found")
         
-    def stop(self, id):
-        if self.id_exists(id):
-            self.servers[id].stop()
+    def stop(self, inputId):
+        if self.input_in_use(inputId):
+            self.servers[inputId].stop()
         else:
-            raise ValueError("ID not found")
+            raise ValueError("inputId not found")
         
-    def delete(self, id):
-        if self.id_exists(id):
-            del self.servers[id]
+    def delete(self, inputId):
+        self.stop(inputId)
+        if self.input_in_use(inputId):
+            del self.servers[inputId]
         else:
-            raise ValueError("ID not found")
+            raise ValueError("inputId not found")
         
-    def id_exists(self, id):
-        return id in self.servers
+    def get_port(self, inputId):
+        if self.input_in_use(inputId):
+            return self.servers[inputId].port
+        else:
+            raise ValueError("inputId not found")
+        
+    def input_in_use(self, inputId):
+        return inputId in self.servers
        
 if __name__ == '__main__':
     audioStreamServerHandler = StreamServerHandler()
-    audioStreamServerHandler.add(id=1, port=7000)
+    audioStreamServerHandler.add(inputId=1, port=7000)
     audioStreamServerHandler.start(1)
 
     # audioStreamHandler = StreamClientHandler()
