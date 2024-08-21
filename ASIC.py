@@ -29,7 +29,6 @@ def handle_device_mute(device_name, device_index, is_muted):
         audioStreamServerHandler.stop(inputId=device_index)
     else:
         audioStreamServerHandler.start(inputId=device_index)
-    action = "Muted" if is_muted else "Unmuted"
 
 class InputDeviceApp:
     def __init__(self, root):
@@ -101,6 +100,9 @@ class InputDeviceApp:
             device_entry_frame.activation_var = activation_var
             device_entry_frame.mute_button = mute_button
             device_entry_frame.mute_var = mute_var
+
+            # Disable mute button by default (as the device is deactivated initially)
+            mute_button.config(state=tk.DISABLED)
 
     def toggle_activation(self, device, device_index, activation_var):
         # Toggle the activation state
