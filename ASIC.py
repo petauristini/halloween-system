@@ -4,7 +4,7 @@ import pyaudio
 import AudioStream
 
 # Initialize the StreamServerHandler instance
-audioStreamServerHandler = AudioStream.StreamServerHandler()
+audioStreamServerHandler = AudioStream.StreamServerHandler(('127.0.0.1', 5000))
 
 # Function to get available input devices using PyAudio
 def get_input_devices():
@@ -47,6 +47,41 @@ class InputDeviceApp:
 
         self.root.configure(bg=self.bg_color)
 
+        # Create the top frame for server input
+        self.top_frame = tk.Frame(self.root, bg=self.bg_color)
+        self.top_frame.pack(pady=10, padx=10, fill=tk.X)
+
+        # Label above the IP and Port entries, will show the connection status too
+        self.server_config_label = tk.Label(self.top_frame, text="Main Server (Connecting...)", font=("Arial", 12, "bold"), fg=self.fg_color, bg=self.bg_color)
+        self.server_config_label.pack(side=tk.TOP, pady=(0, 5))
+
+        # Label for IP address input
+        self.ip_label = tk.Label(self.top_frame, text="IP:", fg=self.fg_color, bg=self.bg_color)
+        self.ip_label.pack(side=tk.LEFT, padx=(0, 5))
+
+        # Entry for IP address with default value
+        self.ip_entry = tk.Entry(self.top_frame, bg=self.button_active_bg, fg=self.fg_color, width=15, insertbackground=self.fg_color)
+        self.ip_entry.insert(0, "192.168.1.50")  # Default IP address
+        self.ip_entry.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Label for port input
+        self.port_label = tk.Label(self.top_frame, text="Port:", fg=self.fg_color, bg=self.bg_color)
+        self.port_label.pack(side=tk.LEFT, padx=(0, 5))
+
+        # Entry for port with default value
+        self.port_entry = tk.Entry(self.top_frame, bg=self.button_active_bg, fg=self.fg_color, width=6, insertbackground=self.fg_color)
+        self.port_entry.insert(0, "8080")  # Default Port
+        self.port_entry.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Update button
+        self.update_button = tk.Button(self.top_frame, text="Update", command=self.update_server_config, bg=self.button_inactive_bg,
+                                       fg=self.button_inactive_fg, activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg, relief="flat")
+        self.update_button.pack(side=tk.LEFT)
+
+        # Separation line with increased height
+        self.separator = tk.Frame(self.root, height=6, bd=1, relief=tk.SUNKEN, bg="#757575")  # Increased height
+        self.separator.pack(fill=tk.X, padx=10, pady=10)
+
         # Load images for mute and unmute
         self.mute_image = ImageTk.PhotoImage(Image.open("muted.png").resize((40, 40)))
         self.unmute_image = ImageTk.PhotoImage(Image.open("unmuted.png").resize((40, 40)))
@@ -60,6 +95,25 @@ class InputDeviceApp:
 
         # Adjust the window size to fit the content
         self.adjust_window_size()
+
+        # Update connection status periodically
+        self.update_connection_status()
+
+    def update_server_config(self):
+        ip = self.ip_entry.get()
+        port = self.port_entry.get()
+        # Here you can add your logic to update the server IP and port in the audioStreamServerHandler
+        print(f"Server IP: {ip}, Port: {port}")
+        # Example: Update the server handler with the new IP and port
+        audioStreamServerHandler.update_main_server((ip, int(port)))
+
+    def update_connection_status(self):
+        if audioStreamServerHandler.mainServerConnected:
+            self.server_config_label.config(text="Main Server (Connected)", fg="#4CAF50")
+        else:
+            self.server_config_label.config(text="Main Server (Disconnected)", fg="#F44336")
+        # Call this method again after 1 second to keep the status updated
+        self.root.after(1000, self.update_connection_status)
 
     def display_devices(self):
         # Get the list of input devices

@@ -5,6 +5,7 @@ import pickle
 import struct
 import atexit
 import time
+import requests
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -227,8 +228,14 @@ class StreamServer:
 
 class StreamServerHandler:
 
-    def __init__(self):
+    def __init__(self, mainServer):
+        self.mainServer = mainServer
+        self.mainServerConnected = False
         self.servers = {}
+
+        self.registrationThreadStopFlag = threading.Event()
+        self.registrationThread = threading.Thread(target=self.register_inputs, args=())
+        self.registrationThread.start()
 
     def add(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         if inputId is None:
@@ -265,12 +272,47 @@ class StreamServerHandler:
         
     def input_in_use(self, inputId):
         return inputId in self.servers
+    
+    def register_inputs(self):
+        while not self.registrationThreadStopFlag.is_set():
+            # serversCopy = self.servers.copy()
+            # for i in serversCopy:
+            #     print(self.mainServer)
+            #     url = f'http://{self.mainServer[0]}:{self.mainServer[1]}/register/input?id={serversCopy[i].inputId}&name={serversCopy[i].inputName}'
+            #     try:
+            #         response = requests.get(url)
+            #         if response.status_code == 200:
+            #             self.mainServerConnected = True
+            #         else:
+            #             self.mainServerConnected = False
+            #     except:
+            #         self.mainServerConnected = False
+            serversCopy = self.servers.copy()
+            serverList = []
+            for i in serversCopy:
+                serverList.append({'inputId': serversCopy[i].inputId, 'inputName': serversCopy[i].inputName, 'port': serversCopy[i].port, 'ip': serversCopy[i].ip})
+
+            url = f'http://{self.mainServer[0]}:{self.mainServer[1]}/register/input'
+            try:
+                response = requests.post(url, json=serverList)
+                if response.status_code == 200:
+                    self.mainServerConnected = True
+                else:
+                    self.mainServerConnected = False
+            except Exception as e:
+                print(e) 
+                self.mainServerConnected = False
+
+
+    def update_main_server(self, mainServer):
+        self.mainServer = mainServer
+        print(f"main server updated to {self.mainServer}")
        
 if __name__ == '__main__':
-    audioStreamServerHandler = StreamServerHandler()
-    audioStreamServerHandler.add(inputId=1, port=7000)
+    audioStreamServerHandler = StreamServerHandler({'ip': '127.0.0.1', 'port': 5000})
+    audioStreamServerHandler.add(inputId=1, inputName='input1', port=7000)
     audioStreamServerHandler.start(1)
 
     # audioStreamHandler = StreamClientHandler()
     # audioStreamHandler.add(id=1, server=('192.168.1.117', 7000))
-    # audioStreamHandler.start(1)
+    # audioStreamHandler.start(1)   
