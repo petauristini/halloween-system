@@ -11,23 +11,6 @@ log.setLevel(logging.ERROR)  # Set to ERROR to suppress normal requests logging
 inputs = []
 outputs = set()
 
-# try:
-#                 data, client_addr = server_socket.recvfrom(1024)
-
-#                 existing_client = next((item for item in self.clients if item[0] == client_addr), None)
-#                 current_time = time.time()
-#                 client = (client_addr, current_time)
-
-#                 if existing_client:
-#                     self.clients.remove(existing_client)
-#                 else:
-#                     print(f'Client {client} connected') 
-
-#                 self.clients.add(client)
-                    
-#             except BlockingIOError:
-#                 pass
-
 @app.route('/register/input', methods=['POST'])
 def register_input():
     current_time = time.time()
@@ -54,7 +37,6 @@ def register_input():
 @app.route('/register/output')
 def register_output():
     pass
-
 
 if __name__ == '__main__':
     app.run(debug=False)
