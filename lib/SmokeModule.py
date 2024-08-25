@@ -42,23 +42,3 @@ class SmokeModule:
     def cleanup(self):
         GPIO.cleanup()
         print("GPIO cleanup done.")
-
-"""# Example usage:
-if __name__ == "__main__":
-    # Create a SmokeModule object controlling GPIO pin 17
-    smoke_module = SmokeModule(17)
-    smoke_module2 = SmokeModule(27)
-    
-    smoke_module.turn_on()
-    smoke_module2.turn_on()
-
-    time.sleep(3)
-
-    smoke_module.turn_off()
-    smoke_module2.turn_off()
-
-    time.sleep(2)
-    
-    smoke_module.turn_on_for(5)
-    time.sleep(4)
-    smoke_module.turn_on_for(5)"""
