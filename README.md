@@ -13,3 +13,5 @@
     time.sleep(2)
     # turn on the smoke module for 5 seconds
     smoke_module.turn_on_for(5)
+
+### Example usage for led functionality:
