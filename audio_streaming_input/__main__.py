@@ -2,7 +2,8 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import pyaudio
 import os
-import lib.AudioStream as AudioStream
+import sys
+from lib import AudioStream
 
 module_dir = os.path.dirname(__file__)
 
@@ -103,6 +104,9 @@ class InputDeviceApp:
 
         # Update connection status periodically
         self.update_connection_status()
+
+        # Set the on_closing method to handle the window close event
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def update_server_config(self):
         ip = self.ip_entry.get()
@@ -248,6 +252,16 @@ class InputDeviceApp:
 
         # Disable resizing
         self.root.resizable(False, False)
+
+    def on_closing(self):
+        """Handles the GUI-specific cleanup when the window is closed."""
+        print("GUI is closing...")
+        
+        # Terminate the StreamServerHandler to stop any active threads
+        audioStreamServerHandler.terminate()
+        
+        self.root.destroy()  # Close the Tkinter window
+        sys.exit(0)  # Exit the script completely
 
 # Create the main window
 root = tk.Tk()

@@ -227,14 +227,15 @@ class StreamServer:
             self.stop()
 
 class StreamServerHandler:
-
     def __init__(self, mainServer):
         self.mainServer = mainServer
         self.mainServerConnected = False
         self.servers = {}
 
+        self.lastRegistration = 0
+        self.registrationInterval = 3
         self.registrationThreadStopFlag = threading.Event()
-        self.registrationThread = threading.Thread(target=self.register_inputs, args=())
+        self.registrationThread = threading.Thread(target=self.register_inputs, daemon=True)
         self.registrationThread.start()
 
     def add(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
@@ -275,27 +276,41 @@ class StreamServerHandler:
     
     def register_inputs(self):
         while not self.registrationThreadStopFlag.is_set():
-            serversCopy = self.servers.copy()
-            serverList = []
-            for i in serversCopy:
-                serverList.append({'inputId': serversCopy[i].inputId, 'inputName': serversCopy[i].inputName, 'port': serversCopy[i].port, 'ip': serversCopy[i].ip})
+            current_time = time.time()
+            if current_time - self.lastRegistration > self.registrationInterval:
+                serversCopy = self.servers.copy()
+                serverList = [{'inputId': server.inputId, 'inputName': server.inputName, 'port': server.port, 'ip': server.ip} for server in serversCopy.values()]
 
-            url = f'http://{self.mainServer[0]}:{self.mainServer[1]}/register/input'
-            try:
-                response = requests.post(url, json=serverList)
-                if response.status_code == 200:
-                    self.mainServerConnected = True
-                else:
+                url = f'http://{self.mainServer[0]}:{self.mainServer[1]}/register/input'
+                try:
+                    response = requests.post(url, json=serverList, timeout=2)  # Added timeout
+                    if response.status_code == 200:
+                        self.mainServerConnected = True
+                    else:
+                        self.mainServerConnected = False
+                except requests.RequestException as e:
+                    print(f"Request error: {e}")
                     self.mainServerConnected = False
-            except Exception as e:
-                print(e) 
-                self.mainServerConnected = False
-            time.sleep(3)
+                except Exception as e:
+                    print(f"Unexpected error: {e}")
+                    self.mainServerConnected = False
 
+                self.lastRegistration = current_time
 
     def update_main_server(self, mainServer):
         self.mainServer = mainServer
-        print(f"main server updated to {self.mainServer}")
+        print(f"Main server updated to {self.mainServer}")
+
+    def terminate(self):
+        for i in self.servers:
+            self.stop(i)
+        if not self.registrationThreadStopFlag.is_set():
+            self.registrationThreadStopFlag.set()
+            self.registrationThread.join(timeout=5)  # Added timeout
+            if self.registrationThread.is_alive():
+                print("Thread did not terminate in time, forcefully terminating.")
+                # You might need additional measures here if the thread is still running
+        print("Registration thread terminated")
        
 if __name__ == '__main__':
     audioStreamServerHandler = StreamServerHandler({'ip': '127.0.0.1', 'port': 5000})
