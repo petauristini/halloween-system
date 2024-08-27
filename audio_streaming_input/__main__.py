@@ -308,11 +308,16 @@ class InputDeviceApp:
         self.root.destroy()  # Close the Tkinter window
         sys.exit(0)  # Exit the script completely
 
+
 # Create the main window
 root = tk.Tk()
+root.withdraw()
 
 # Instantiate the app
 app = InputDeviceApp(root)
+print("GUI is ready...")
+
+root.deiconify()
 
 # Run the application
 root.mainloop()
