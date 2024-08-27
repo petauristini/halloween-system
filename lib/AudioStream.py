@@ -230,6 +230,7 @@ class StreamServerHandler:
     def __init__(self, mainServer):
         self.mainServer = mainServer
         self.mainServerConnected = False
+        self.channels = ["channel1", "channel2", "channel3", "channel4"]
         self.servers = {}
 
         self.lastRegistration = 0
