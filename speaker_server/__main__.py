@@ -2,7 +2,7 @@ import os
 from flask import Flask, request
 import json
 import lib.AudioStream as AudioStream
-import lib.AudioFile as AudioFile
+import audioplayer.server as server
 
 module_dir = os.path.dirname(__file__)
 
@@ -13,7 +13,7 @@ with open(os.path.join(module_dir, 'config.json')) as configFile:
 
 app = Flask(__name__)       
 
-audioFileHandler = AudioFile.AudioFileHandler()
+audioFileHandler = server.AudioFileHandler()
 audioStreamHandler = AudioStream.StreamClientHandler()
 
 @app.route('/play')
