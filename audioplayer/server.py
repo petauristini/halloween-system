@@ -14,29 +14,29 @@ class AudioFile:
         
         self.sound = pygame.mixer.Sound(file_path)
     
-    def is_playing(self) -> bool:
+    def _is_playing(self) -> bool:
         return self.sound.get_num_channels() > 0
         
     def play(self, volume: float = 1.0):
-        if self.is_playing():
+        if self._is_playing():
             self.stop()
         
         self.sound.set_volume(volume)
         self.sound.play()
 
     def stop(self):
-        if self.is_playing():
+        if self._is_playing():
             self.sound.stop()
 
 
-class AudioManager:
+class AudioPlayer:
 
     def __init__(self):
         self.audio_files = {}
         pygame.mixer.init()
-        self._initialize_audio_files()
+        self.load_audio_files()
 
-    def _initialize_audio_files(self):
+    def load_audio_files(self):
         module_dir = Path(__file__).parent
         assets_dir = module_dir / 'assets'
         
@@ -47,13 +47,13 @@ class AudioManager:
             file_key = wav_file.stem
             self.audio_files[file_key] = AudioFile(str(wav_file))
         
-        logging.info(f"Initialized audio files: {self.audio_files}")
+        logging.info(f"Loaded audio files: {self.audio_files}")
 
-class ServerHandler:
-    def __init__(self, port: int=5000):
-        self.port = port
-        self.audio_manager = AudioManager()
-        self.app = Flask(__name__)
+
+class AudioPlayerServer:
+    def __init__(self, app: Flask):
+        self.app = app
+        self.audio_manager = AudioPlayer()
         self._setup_routes()
 
     def _validate_file(self, file: str):
@@ -61,20 +61,25 @@ class ServerHandler:
     
     def _validate_volume(self, volume: str):
         return volume and float(volume) and 0 <= float(volume) <= 1
-    
-            
+      
     def _setup_routes(self):
         
-        @self.app.route('/api/ping', methods=['GET'])
+        @self.app.route('/api/audioplayer/ping', methods=['GET'])
         def ping():
             return "", 200
         
-        @self.app.route('/api/play', methods=['GET'])
+        @self.app.route('/api/audioplayer/update', methods=['GET'])
+        def update():
+            try:
+                self.audio_manager.load_audio_files()
+            except Exception as e:
+                return jsonify(error=str(e)), 500
+            return "", 200
+        
+        @self.app.route('/api/audioplayer/play', methods=['GET'])
         def play():
             file = request.args.get('file')
             volume = request.args.get('volume', '1')
-
-
 
             if not self._validate_file:
                 return jsonify(error="File not found"), 404
@@ -89,7 +94,7 @@ class ServerHandler:
             except Exception as e:
                 return jsonify(error=str(e)), 500
 
-        @self.app.route('/api/stop', methods=['GET'])
+        @self.app.route('/api/audioplayer/stop', methods=['GET'])
         def stop():
             file = request.args.get('file')
 
@@ -103,9 +108,7 @@ class ServerHandler:
             except Exception as e:
                 return jsonify(error=str(e)), 500
 
-    def start(self):
-        self.app.run(host='0.0.0.0', port=self.port)
-
 if __name__ == '__main__':
-    app = ServerHandler()
-    app.start()
+    app = Flask(__name__)
+    server = AudioPlayerServer(app)
+    app.run(debug=True)

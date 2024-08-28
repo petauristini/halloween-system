@@ -1,4 +1,7 @@
 import requests
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 class AudioServer:
 
@@ -8,25 +11,58 @@ class AudioServer:
 
     def play(self, file: str, volume: float=1):
         try:
-            response = requests.get(f'http://{self.ip}:{self.port}/api/play', params={'file': file, 'volume': volume})
-            response.raise_for_status()
-        except requests.RequestException as e:
-            print(f"Error playing file '{file}'")
+            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/play', params={'file': file, 'volume': volume})
+            if not res.ok:
+                logging.error(f"Error playing file '{file}'")
+        except Exception as e:
+            logging.error(f"Connection error: {e}")
 
     def stop(self, file: str):
         try:
-            response = requests.get(f'http://{self.ip}:{self.port}/api/stop', params={'file': file})
-            response.raise_for_status()
-        except requests.RequestException as e:
-            print(f"Error stopping file '{file}'")
+            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/stop', params={'file': file})
+            if not res.ok:
+                logging.error(f"Error stopping file '{file}'")
+        except Exception as e:
+            logging.error(f"Connection error: {e}")
 
     def check_connection(self):
         try:
-            response = requests.get(f'http://{self.ip}:{self.port}/api/ping')
-            response.raise_for_status()
-            return response.ok
-        except requests.RequestException as e:
-            print(f"Error checking connection")
+            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/ping')
+            return res.ok
+        except Exception as e:
+            logging.error(f"Connection error: {e}")
+
+    def update(self):
+        try:
+            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/update')
+            if not res.ok:
+                logging.error(f"Error updating files")
+        except Exception as e:
+            logging.error(f"Connection error: {e}")
+
+class AudioServerGroup:
+
+    def __init__(self, servers: list[AudioServer]):
+        self.servers = servers
+
+    def play(self, file: str, volume: float=1):
+        for server in self.servers:
+            server.play(file, volume)
+
+
+    def stop(self, file: str):
+        for server in self.servers:
+            server.stop(file)
+
+    def check_connection(self):
+        results = []
+        for server in self.servers:
+            result = server.check_connection()
+
+    def update(self):
+        for server in self.servers:
+            server.update()
+
 
 if __name__ == '__main__':
     server = AudioServer('localhost', 5000)
