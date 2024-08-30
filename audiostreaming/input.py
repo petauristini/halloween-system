@@ -150,7 +150,7 @@ class StreamingInputHandler:
         for i in range(self.pyaudio.get_device_count()):
             device_info = self.pyaudio.get_device_info_by_index(i)     
             if device_info['maxInputChannels'] > 0:
-                new_inputs.append(device_info['name'])
+                new_inputs.append((i, device_info['name']))
         if new_inputs != self.inputs:
             self.inputs = new_inputs
             if self.input_update_callback:
@@ -241,6 +241,8 @@ class InputDeviceApp:
         self.audioStreamingInputHandler = StreamingInputHandler((DEFAULT_IP, DEFAULT_PORT), self.refresh_display)
 
         self.root.title("Audio Streaming Input")
+
+        self.current_inputs = {}
 
         # Set dark mode colors
         self.bg_color = "#2E2E2E"
@@ -350,86 +352,94 @@ class InputDeviceApp:
         # Display updated devices
         self.display_devices()
 
+    def add_device(self, device):
+        device_entry_frame = tk.Frame(self.device_list_frame, bd=2, relief=tk.RAISED, width=400, bg=self.bg_color)
+        device_entry_frame.pack(fill=tk.X, pady=5, padx=5)
+        device_entry_frame.pack_propagate(False)
+
+        # Use grid layout for internal widgets
+        device_entry_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
+        device_entry_frame.grid_rowconfigure(1, weight=0)  # Buttons row
+        device_entry_frame.grid_columnconfigure(0, weight=1)  # Expand the column for the dropdown
+
+        # Label to display the device name
+        device_label = tk.Label(device_entry_frame, text=device[1], font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
+        device_label.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+
+        # Create a frame to hold the dropdown and buttons
+        control_frame = tk.Frame(device_entry_frame, bg=self.bg_color)
+        control_frame.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        control_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
+        control_frame.grid_rowconfigure(1, weight=0)  # Buttons row 
+        control_frame.grid_columnconfigure(0, weight=1)  # Dropdown expands
+
+        # Check if outputs is empty
+        if not self.audioStreamingInputHandler.outputs:
+            # Create a label to indicate no outputs available
+            no_outputs_label = tk.Label(control_frame, text="No outputs available", font=("Arial", 12), fg="red", bg=self.bg_color)
+            no_outputs_label.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        else:
+            # Create a list of channels for the dropdown
+            self.selected_channel = tk.StringVar(value=self.audioStreamingInputHandler.outputs[0])  # Default value
+
+            # Create the dropdown menu
+            dropdown_menu = tk.OptionMenu(control_frame, self.selected_channel, *self.audioStreamingInputHandler.outputs)
+            dropdown_menu.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            
+            dropdown_menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg, relief="flat")
+
+            menu = dropdown_menu.nametowidget(dropdown_menu.menuname)
+            menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg)
+
+            # Adjust dropdown width to fit content, using a placeholder
+            dropdown_menu.update_idletasks()
+            dropdown_width = dropdown_menu.winfo_reqwidth()
+            control_frame.config(width=dropdown_width + 20)  # Add some padding to the width
+
+        # Create a frame to hold the activation and mute buttons
+        buttons_frame = tk.Frame(control_frame, bg=self.bg_color)
+        buttons_frame.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        buttons_frame.grid_columnconfigure(0, weight=1)  # Expand the column for activation button
+        buttons_frame.grid_columnconfigure(1, weight=0)  # Fixed size for mute button
+
+        # Activation button
+        activation_var = tk.BooleanVar(value=False)  # False = Deactivated, True = Activated
+        activation_button = tk.Button(buttons_frame, text="Activate", command=lambda d=device[1], i=device[0], v=activation_var: self.toggle_activation(d, i, v),
+                                    bg=self.button_inactive_bg, fg=self.button_inactive_fg, relief="flat", width=10, height=1,
+                                    activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg,
+                                    highlightthickness=0, bd=0, cursor="hand2")
+        activation_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
+        # Mute/unmute button
+        mute_var = tk.BooleanVar(value=False)  # False = Unmuted by default
+        mute_button = tk.Button(buttons_frame, image=self.unmute_image, command=lambda v=mute_var, d=device[1], i=device[0]: self.toggle_mute(v, d, i),
+                                bg=self.bg_color, borderwidth=0, highlightthickness=0, activebackground=self.bg_color, activeforeground=self.fg_color, relief="flat", cursor="hand2")
+        mute_button.grid(row=0, column=1, padx=5, pady=5)
+
+        # Store references to buttons and vars in the frame
+        device_entry_frame.activation_button = activation_button
+        device_entry_frame.activation_var = activation_var
+        device_entry_frame.mute_button = mute_button
+        device_entry_frame.mute_var = mute_var
+        device_entry_frame.dropdown_menu = dropdown_menu if not not self.audioStreamingInputHandler.outputs else None  # Store dropdown reference
+
+        # Disable mute button by default (as the device is deactivated initially)
+        mute_button.config(state=tk.DISABLED)
+
+        self.current_inputs[device[0]] = device_entry_frame
+        
+    def remove_device(self, device_id):
+        if device_id in self.current_inputs:
+            device_frame = self.current_inputs.pop(device_id)
+            device_frame.destroy()
 
     def display_devices(self):  
         # Clear the existing devices display
         for widget in self.device_list_frame.winfo_children():  
             widget.destroy()
 
-        for index, device in enumerate(self.audioStreamingInputHandler.inputs):
-            # Create a frame for each device entry
-            device_entry_frame = tk.Frame(self.device_list_frame, bd=2, relief=tk.RAISED, width=400, bg=self.bg_color)
-            device_entry_frame.pack(fill=tk.X, pady=5, padx=5)
-            device_entry_frame.pack_propagate(False)
-
-            # Use grid layout for internal widgets
-            device_entry_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
-            device_entry_frame.grid_rowconfigure(1, weight=0)  # Buttons row
-            device_entry_frame.grid_columnconfigure(0, weight=1)  # Expand the column for the dropdown
-
-            # Label to display the device name
-            device_label = tk.Label(device_entry_frame, text=device, font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
-            device_label.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
-
-            # Create a frame to hold the dropdown and buttons
-            control_frame = tk.Frame(device_entry_frame, bg=self.bg_color)
-            control_frame.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
-            control_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
-            control_frame.grid_rowconfigure(1, weight=0)  # Buttons row 
-            control_frame.grid_columnconfigure(0, weight=1)  # Dropdown expands
-
-            # Check if outputs is empty
-            if not self.audioStreamingInputHandler.outputs:
-                # Create a label to indicate no outputs available
-                no_outputs_label = tk.Label(control_frame, text="No outputs available", font=("Arial", 12), fg="red", bg=self.bg_color)
-                no_outputs_label.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-            else:
-                # Create a list of channels for the dropdown
-                self.selected_channel = tk.StringVar(value=self.audioStreamingInputHandler.outputs[0])  # Default value
-
-                # Create the dropdown menu
-                dropdown_menu = tk.OptionMenu(control_frame, self.selected_channel, *self.audioStreamingInputHandler.outputs)
-                dropdown_menu.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-                
-                dropdown_menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg, relief="flat")
-
-                menu = dropdown_menu.nametowidget(dropdown_menu.menuname)
-                menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg)
-
-                # Adjust dropdown width to fit content, using a placeholder
-                dropdown_menu.update_idletasks()
-                dropdown_width = dropdown_menu.winfo_reqwidth()
-                control_frame.config(width=dropdown_width + 20)  # Add some padding to the width
-
-            # Create a frame to hold the activation and mute buttons
-            buttons_frame = tk.Frame(control_frame, bg=self.bg_color)
-            buttons_frame.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
-            buttons_frame.grid_columnconfigure(0, weight=1)  # Expand the column for activation button
-            buttons_frame.grid_columnconfigure(1, weight=0)  # Fixed size for mute button
-
-            # Activation button
-            activation_var = tk.BooleanVar(value=False)  # False = Deactivated, True = Activated
-            activation_button = tk.Button(buttons_frame, text="Activate", command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
-                                        bg=self.button_inactive_bg, fg=self.button_inactive_fg, relief="flat", width=10, height=1,
-                                        activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg,
-                                        highlightthickness=0, bd=0, cursor="hand2")
-            activation_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-
-            # Mute/unmute button
-            mute_var = tk.BooleanVar(value=False)  # False = Unmuted by default
-            mute_button = tk.Button(buttons_frame, image=self.unmute_image, command=lambda v=mute_var, d=device, i=index: self.toggle_mute(v, d, i),
-                                    bg=self.bg_color, borderwidth=0, highlightthickness=0, activebackground=self.bg_color, activeforeground=self.fg_color, relief="flat", cursor="hand2")
-            mute_button.grid(row=0, column=1, padx=5, pady=5)
-
-            # Store references to buttons and vars in the frame
-            device_entry_frame.activation_button = activation_button
-            device_entry_frame.activation_var = activation_var
-            device_entry_frame.mute_button = mute_button
-            device_entry_frame.mute_var = mute_var
-            device_entry_frame.dropdown_menu = dropdown_menu if not not self.audioStreamingInputHandler.outputs else None  # Store dropdown reference
-
-            # Disable mute button by default (as the device is deactivated initially)
-            mute_button.config(state=tk.DISABLED)
+        for device in self.audioStreamingInputHandler.inputs:
+            self.add_device(device)
 
 
 
