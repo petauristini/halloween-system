@@ -263,13 +263,13 @@ class InputDeviceApp:
         # Load images for buttons
         self.refresh_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'refresh.png')).resize((30, 30)))
         self.update_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'update.png')).resize((30, 30)))  # Load Update button image
-        self.mute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'muted.png')).resize((40, 40)))
-        self.unmute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unmuted.png')).resize((40, 40)))
         self.select_output_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'speaker.png')).resize((30, 30)))
         self.checked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'checked.png')).resize((20, 20)))
         self.unchecked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unchecked.png')).resize((20, 20)))
         self.activate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'activate.png')).resize((30, 30)))
         self.deactivate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'deactivate.png')).resize((30, 30)))
+        self.ok_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'ok.png')).resize((30, 30)))
+
 
 
         # Create the top frame with a fixed height
@@ -336,12 +336,6 @@ class InputDeviceApp:
             self.audioStreamingInputHandler.start(inputId=device_index)
         else:
             self.audioStreamingInputHandler.delete(inputId=device_index)
-
-    def _handle_device_mute(self, device_name, device_index, is_muted):
-        if is_muted:    
-            self.audioStreamingInputHandler.stop(inputId=device_index)
-        else:
-            self.audioStreamingInputHandler.start(inputId=device_index)
 
     def update_server_config(self):
         ip = self.ip_entry.get()
@@ -486,10 +480,10 @@ class InputDeviceApp:
             checkbox_button.config(image=self.checked_image if var.get() else self.unchecked_image)
 
         # Add an OK button to confirm selection
-        ok_button = tk.Button(output_window, text="OK", command=lambda: self.save_output_selection(output_window, device),
-                            bg=self.button_inactive_bg, fg=self.button_inactive_fg, activebackground=self.button_hover_bg,
-                            activeforeground=self.button_hover_fg, relief="flat", width=10)
+        ok_button = tk.Button(output_window, image=self.ok_image, command=lambda: self.save_output_selection(output_window, device),
+                            bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
         ok_button.grid(row=len(self.audioStreamingInputHandler.outputs), column=0, pady=10, padx=10)
+
 
 
     def toggle_output_image(self, output, var):
@@ -539,23 +533,6 @@ class InputDeviceApp:
         selected_outputs = self.get_selected_outputs_for_device(device)
         self._handle_device_activation(device, device_index, is_activated)
 
-
-
-
-
-    def toggle_mute(self, mute_var, device, device_index):
-        # Toggle the mute state
-        is_muted = not mute_var.get()
-        mute_var.set(is_muted)
-
-        # Find the mute button for the given device
-        mute_button = self.find_mute_button(device)
-        if mute_button:
-            mute_button.config(image=self.mute_image if is_muted else self.unmute_image)
-
-        # Call the function to handle mute
-        self._handle_device_mute(device, device_index, is_muted)
-
     def set_dropdown_state(self, device, state):
         # Find the dropdown menu for the given device and set its state
         for widget in self.device_list_frame.winfo_children():
@@ -565,33 +542,6 @@ class InputDeviceApp:
                         dropdown_menu = widget.dropdown_menu
                         dropdown_menu.config(state=state)
                         return
-
-    def get_mute_var(self, device):
-        # Find the mute variable for the given device
-        for widget in self.device_list_frame.winfo_children():
-            if isinstance(widget, tk.Frame):
-                if widget.winfo_children():
-                    if widget.winfo_children()[0].cget("text") == device:
-                        return widget.mute_var
-        return None
-
-    def get_mute_button(self, device):
-        # Find the mute button for the given device
-        for widget in self.device_list_frame.winfo_children():
-            if isinstance(widget, tk.Frame):
-                if widget.winfo_children():
-                    if widget.winfo_children()[0].cget("text") == device:
-                        return widget.mute_button
-        return None
-
-    def find_mute_button(self, device):
-        # Find the mute button for the given device
-        for widget in self.device_list_frame.winfo_children():
-            if isinstance(widget, tk.Frame):
-                if widget.winfo_children():
-                    if widget.winfo_children()[0].cget("text") == device:
-                        return widget.mute_button
-        return None
 
     def get_activation_button(self, device):
         return self.device_buttons.get(device, {}).get('activation_button')
