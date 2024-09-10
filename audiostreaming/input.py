@@ -268,6 +268,9 @@ class InputDeviceApp:
         self.select_output_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'speaker.png')).resize((30, 30)))
         self.checked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'checked.png')).resize((20, 20)))
         self.unchecked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unchecked.png')).resize((20, 20)))
+        self.activate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'activate.png')).resize((30, 30)))
+        self.deactivate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'deactivate.png')).resize((30, 30)))
+
 
         # Create the top frame with a fixed height
         self.top_frame = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_frame
@@ -408,26 +411,26 @@ class InputDeviceApp:
             device_label = tk.Label(content_frame, text=device, font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
             device_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
 
-            # Frame to hold the buttons
+            # Frame to hold the buttons (this is the container frame for horizontal alignment)
             buttons_frame = tk.Frame(content_frame, bg=self.bg_color)
             buttons_frame.pack(side=tk.RIGHT, padx=10, pady=5)
 
-            # Create a frame to hold the activation and select output buttons
+            # Create a frame to hold the activation and select output buttons horizontally
             buttons_container_frame = tk.Frame(buttons_frame, bg=self.bg_color)
             buttons_container_frame.pack(side=tk.LEFT, padx=5, pady=5)
 
             # Activation button
             activation_var = tk.BooleanVar(value=False)  # False = Deactivated, True = Activated
-            activation_button = tk.Button(buttons_container_frame, text="Activate", command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
-                                        bg=self.button_inactive_bg, fg=self.button_inactive_fg, relief="flat", width=6, height=1,
+            activation_button = tk.Button(buttons_container_frame, image=self.activate_image, command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
+                                        bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0,
                                         activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg,
-                                        highlightthickness=0, bd=0, cursor="hand2")
-            activation_button.pack(side=tk.TOP, padx=5, pady=5)
+                                        cursor="hand2")
+            activation_button.pack(side=tk.LEFT, padx=5, pady=5)
 
             # Button to open the output selection window (using image instead of text)
             output_button = tk.Button(buttons_container_frame, image=self.select_output_image, command=lambda d=device: self.open_output_selection(d),
                                     bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
-            output_button.pack(side=tk.TOP, padx=5, pady=5)
+            output_button.pack(side=tk.LEFT, padx=5, pady=5)
 
             # Store references to buttons and vars in the frame
             self.device_buttons[device] = {
@@ -441,11 +444,6 @@ class InputDeviceApp:
             self.device_list_frame.grid_columnconfigure(col, weight=1)
         for row in range((len(devices) + num_columns - 1) // num_columns):
             self.device_list_frame.grid_rowconfigure(row, weight=1)
-
-
-
-
-
 
     def open_output_selection(self, device):
         # Create a new Toplevel window
@@ -524,29 +522,23 @@ class InputDeviceApp:
 
 
     def toggle_activation(self, device, device_index, activation_var):
-        # Only proceed if outputs are available
         if not self.audioStreamingInputHandler.outputs:
             print("Cannot activate input, no outputs available")
             return
 
-        # Toggle the activation state
         is_activated = not activation_var.get()
         activation_var.set(is_activated)
-        activation_button_text = "Deactivate" if is_activated else "Activate"
-        activation_button_bg = "#f44336" if is_activated else self.button_inactive_bg
 
-        # Update the button text and background color
         activation_button = self.get_activation_button(device)
         if activation_button:
-            activation_button.config(text=activation_button_text, bg=activation_button_bg)
+            activation_button.config(image=self.deactivate_image if is_activated else self.activate_image)
         else:
             print(f"Activation button not found for device: {device}")
 
         # Handle the activation logic
         selected_outputs = self.get_selected_outputs_for_device(device)
-
-        # Call the function to handle activation with selected outputs
         self._handle_device_activation(device, device_index, is_activated)
+
 
 
 
