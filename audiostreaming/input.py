@@ -238,7 +238,11 @@ class InputDeviceApp:
         self.root = root
         self.root.withdraw()
 
-        self.audioStreamingInputHandler = StreamingInputHandler((DEFAULT_IP, DEFAULT_PORT), self.refresh_display)
+        self.audioStreamingInputHandler = StreamingInputHandler((DEFAULT_IP, DEFAULT_PORT))
+
+        # Initialize device output vars
+        self.device_output_vars = {}
+        self.device_selected_outputs = {}
 
         self.root.title("Audio Streaming Input")
 
@@ -251,49 +255,58 @@ class InputDeviceApp:
         self.button_active_fg = "#FFFFFF"
         self.button_hover_bg = "#757575"  # Gray shade for hover
         self.button_hover_fg = "#FFFFFF"  # White text for hover
+        self.connected_color = "#4CAF50"  # Green for connected
+        self.disconnected_color = "#F44336"  # Red for disconnected
 
         self.root.configure(bg=self.bg_color)
 
-        # Create the top frame for server input
-        self.top_frame = tk.Frame(self.root, bg=self.bg_color)
-        self.top_frame.pack(pady=10, padx=10, fill=tk.X)
+        # Load images for buttons
+        self.refresh_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'refresh.png')).resize((30, 30)))
+        self.update_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'update.png')).resize((30, 30)))  # Load Update button image
+        self.mute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'muted.png')).resize((40, 40)))
+        self.unmute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unmuted.png')).resize((40, 40)))
+        self.select_output_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'speaker.png')).resize((30, 30)))
+        self.checked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'checked.png')).resize((20, 20)))
+        self.unchecked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unchecked.png')).resize((20, 20)))
 
-        # Label above the IP and Port entries, will show the connection status too
-        self.server_config_label = tk.Label(self.top_frame, text="Main Server (Connecting...)", font=("Arial", 12, "bold"), fg=self.fg_color, bg=self.bg_color)
-        self.server_config_label.pack(side=tk.TOP, pady=(0, 5))
+        # Create the top frame with a fixed height
+        self.top_frame = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_frame
+        self.top_frame.pack(pady=10, padx=10, fill=tk.X, expand=False)  # Fill horizontally but not vertically
 
-        # Label for IP address input
-        self.ip_label = tk.Label(self.top_frame, text="IP:", fg=self.fg_color, bg=self.bg_color)
-        self.ip_label.pack(side=tk.LEFT, padx=(0, 5))
+        # Use grid layout for precise control
+        self.top_frame.grid_rowconfigure(0, weight=1)
+        self.top_frame.grid_columnconfigure(0, weight=1)  # For Refresh Devices button
+        self.top_frame.grid_columnconfigure(1, weight=1)  # For IP, Port entries and Update button
 
-        # Entry for IP address with default value
-        self.ip_entry = tk.Entry(self.top_frame, bg=self.button_active_bg, fg=self.fg_color, width=15, insertbackground=self.fg_color)
+        # Refresh Devices button (left aligned) with image
+        self.refresh_button = tk.Button(self.top_frame, image=self.refresh_image, command=self.refresh_display,
+                                        bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
+        self.refresh_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
+
+        # Frame for IP, Port entries and Update button (right aligned)
+        self.right_frame = tk.Frame(self.top_frame, bg=self.bg_color)
+        self.right_frame.grid(row=0, column=1, sticky="e")
+
+        # IP Entry
+        self.ip_entry = tk.Entry(self.right_frame, bg=self.button_active_bg, fg=self.fg_color, width=15, insertbackground=self.fg_color)
         self.ip_entry.insert(0, DEFAULT_IP)
-        self.ip_entry.pack(side=tk.LEFT, padx=(0, 10))
+        self.ip_entry.pack(side=tk.LEFT, padx=(0, 5))
 
-        # Label for port input
-        self.port_label = tk.Label(self.top_frame, text="Port:", fg=self.fg_color, bg=self.bg_color)
-        self.port_label.pack(side=tk.LEFT, padx=(0, 5))
-
-        # Entry for port with default value
-        self.port_entry = tk.Entry(self.top_frame, bg=self.button_active_bg, fg=self.fg_color, width=6, insertbackground=self.fg_color)
+        # Port Entry
+        self.port_entry = tk.Entry(self.right_frame, bg=self.button_active_bg, fg=self.fg_color, width=6, insertbackground=self.fg_color)
         self.port_entry.insert(0, DEFAULT_PORT)
-        self.port_entry.pack(side=tk.LEFT, padx=(0, 10))
+        self.port_entry.pack(side=tk.LEFT, padx=(0, 10))  # Increased padding to the right of the Port Entry
 
-        # Update button
-        self.update_button = tk.Button(self.top_frame, text="Update", command=self.update_server_config, bg=self.button_inactive_bg,
-                                       fg=self.button_inactive_fg, activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg, relief="flat")
+        # Update button (with image)
+        self.update_button = tk.Button(self.right_frame, image=self.update_image, command=self.update_server_config,
+                                        bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
         self.update_button.pack(side=tk.LEFT)
 
         # Separation line with increased height
         self.separator = tk.Frame(self.root, height=6, bd=1, relief=tk.SUNKEN, bg="#757575")  # Increased height
-        self.separator.pack(fill=tk.X, padx=10, pady=10)
+        self.separator.pack(fill=tk.X)
 
-        # Load images for mute and unmute
-        self.mute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'muted.png')).resize((40, 40)))
-        self.unmute_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unmuted.png')).resize((40, 40)))
-
-        # Frame to display the list of devices
+        # Frame for displaying devices
         self.device_list_frame = tk.Frame(root, bg=self.bg_color)
         self.device_list_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
@@ -311,6 +324,8 @@ class InputDeviceApp:
 
         self.root.deiconify()
         print("GUI is ready...")
+
+
     
     def _handle_device_activation(self, device_name, device_index, is_activated):
         if is_activated:
@@ -334,11 +349,17 @@ class InputDeviceApp:
         self.audioStreamingInputHandler.update_main_server((ip, int(port)))
 
     def update_connection_status(self):
-        if self.audioStreamingInputHandler.mainServerConnected:
-            self.server_config_label.config(text="Main Server (Connected)", fg="#4CAF50")
-        else:
-            self.server_config_label.config(text="Main Server (Disconnected)", fg="#F44336")
-        # Call this method again after 1 second to keep the status updated
+        try:
+            if self.audioStreamingInputHandler.mainServerConnected:
+                self.ip_entry.config(bg=self.connected_color)
+                self.port_entry.config(bg=self.connected_color)
+            else:
+                self.ip_entry.config(bg=self.disconnected_color)
+                self.port_entry.config(bg=self.disconnected_color)
+        except Exception as e:
+            print(f"Error updating connection status: {e}")
+            self.ip_entry.config(bg=self.disconnected_color)
+            self.port_entry.config(bg=self.disconnected_color)
         self.root.after(1000, self.update_connection_status)
 
     def refresh_display(self):
@@ -350,86 +371,155 @@ class InputDeviceApp:
         # Display updated devices
         self.display_devices()
 
-
-    def display_devices(self):  
+    def display_devices(self):
         # Clear the existing devices display
-        for widget in self.device_list_frame.winfo_children():  
+        for widget in self.device_list_frame.winfo_children():
             widget.destroy()
 
-        for index, device in enumerate(self.audioStreamingInputHandler.inputs):
-            # Create a frame for each device entry
-            device_entry_frame = tk.Frame(self.device_list_frame, bd=2, relief=tk.RAISED, width=400, bg=self.bg_color)
-            device_entry_frame.pack(fill=tk.X, pady=5, padx=5)
-            device_entry_frame.pack_propagate(False)
+        # Define the number of columns in the grid
+        num_columns = 3  # Adjust this number based on your layout preferences
 
-            # Use grid layout for internal widgets
-            device_entry_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
-            device_entry_frame.grid_rowconfigure(1, weight=0)  # Buttons row
-            device_entry_frame.grid_columnconfigure(0, weight=1)  # Expand the column for the dropdown
+        # Ensure device_list_frame uses grid layout
+        self.device_list_frame.grid_rowconfigure(0, weight=1)
+        self.device_list_frame.grid_columnconfigure(0, weight=1)
+
+        devices = get_input_devices()
+        print("Devices:", devices)
+
+        if not devices:
+            print("No devices found.")
+            return
+
+        # Store buttons in a dictionary
+        self.device_buttons = {}
+
+        # Loop through devices and create frames for each
+        for index, device in enumerate(devices):
+            # Create a frame for each device entry
+            device_entry_frame = tk.Frame(self.device_list_frame, bd=2, relief=tk.RAISED, bg=self.bg_color)
+            device_entry_frame.grid(row=index // num_columns, column=index % num_columns, pady=5, padx=5, sticky="nsew")
+            device_entry_frame.grid_propagate(False)
+
+            # Frame to hold the device name and buttons
+            content_frame = tk.Frame(device_entry_frame, bg=self.bg_color)
+            content_frame.pack(fill=tk.BOTH, expand=True)
 
             # Label to display the device name
-            device_label = tk.Label(device_entry_frame, text=device, font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
-            device_label.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+            device_label = tk.Label(content_frame, text=device, font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
+            device_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
 
-            # Create a frame to hold the dropdown and buttons
-            control_frame = tk.Frame(device_entry_frame, bg=self.bg_color)
-            control_frame.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
-            control_frame.grid_rowconfigure(0, weight=0)  # Dropdown row
-            control_frame.grid_rowconfigure(1, weight=0)  # Buttons row 
-            control_frame.grid_columnconfigure(0, weight=1)  # Dropdown expands
+            # Frame to hold the buttons
+            buttons_frame = tk.Frame(content_frame, bg=self.bg_color)
+            buttons_frame.pack(side=tk.RIGHT, padx=10, pady=5)
 
-            # Check if outputs is empty
-            if not self.audioStreamingInputHandler.outputs:
-                # Create a label to indicate no outputs available
-                no_outputs_label = tk.Label(control_frame, text="No outputs available", font=("Arial", 12), fg="red", bg=self.bg_color)
-                no_outputs_label.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-            else:
-                # Create a list of channels for the dropdown
-                self.selected_channel = tk.StringVar(value=self.audioStreamingInputHandler.outputs[0])  # Default value
-
-                # Create the dropdown menu
-                dropdown_menu = tk.OptionMenu(control_frame, self.selected_channel, *self.audioStreamingInputHandler.outputs)
-                dropdown_menu.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-                
-                dropdown_menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg, relief="flat")
-
-                menu = dropdown_menu.nametowidget(dropdown_menu.menuname)
-                menu.config(bg=self.bg_color, fg=self.fg_color, activebackground=self.button_active_bg, activeforeground=self.button_active_fg)
-
-                # Adjust dropdown width to fit content, using a placeholder
-                dropdown_menu.update_idletasks()
-                dropdown_width = dropdown_menu.winfo_reqwidth()
-                control_frame.config(width=dropdown_width + 20)  # Add some padding to the width
-
-            # Create a frame to hold the activation and mute buttons
-            buttons_frame = tk.Frame(control_frame, bg=self.bg_color)
-            buttons_frame.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
-            buttons_frame.grid_columnconfigure(0, weight=1)  # Expand the column for activation button
-            buttons_frame.grid_columnconfigure(1, weight=0)  # Fixed size for mute button
+            # Create a frame to hold the activation and select output buttons
+            buttons_container_frame = tk.Frame(buttons_frame, bg=self.bg_color)
+            buttons_container_frame.pack(side=tk.LEFT, padx=5, pady=5)
 
             # Activation button
             activation_var = tk.BooleanVar(value=False)  # False = Deactivated, True = Activated
-            activation_button = tk.Button(buttons_frame, text="Activate", command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
-                                        bg=self.button_inactive_bg, fg=self.button_inactive_fg, relief="flat", width=10, height=1,
+            activation_button = tk.Button(buttons_container_frame, text="Activate", command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
+                                        bg=self.button_inactive_bg, fg=self.button_inactive_fg, relief="flat", width=6, height=1,
                                         activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg,
                                         highlightthickness=0, bd=0, cursor="hand2")
-            activation_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            activation_button.pack(side=tk.TOP, padx=5, pady=5)
 
-            # Mute/unmute button
-            mute_var = tk.BooleanVar(value=False)  # False = Unmuted by default
-            mute_button = tk.Button(buttons_frame, image=self.unmute_image, command=lambda v=mute_var, d=device, i=index: self.toggle_mute(v, d, i),
-                                    bg=self.bg_color, borderwidth=0, highlightthickness=0, activebackground=self.bg_color, activeforeground=self.fg_color, relief="flat", cursor="hand2")
-            mute_button.grid(row=0, column=1, padx=5, pady=5)
+            # Button to open the output selection window (using image instead of text)
+            output_button = tk.Button(buttons_container_frame, image=self.select_output_image, command=lambda d=device: self.open_output_selection(d),
+                                    bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
+            output_button.pack(side=tk.TOP, padx=5, pady=5)
 
             # Store references to buttons and vars in the frame
-            device_entry_frame.activation_button = activation_button
-            device_entry_frame.activation_var = activation_var
-            device_entry_frame.mute_button = mute_button
-            device_entry_frame.mute_var = mute_var
-            device_entry_frame.dropdown_menu = dropdown_menu if not not self.audioStreamingInputHandler.outputs else None  # Store dropdown reference
+            self.device_buttons[device] = {
+                'activation_button': activation_button,
+                'activation_var': activation_var,
+                'output_button': output_button
+            }
 
-            # Disable mute button by default (as the device is deactivated initially)
-            mute_button.config(state=tk.DISABLED)
+        # Configure grid weight for resizing
+        for col in range(num_columns):
+            self.device_list_frame.grid_columnconfigure(col, weight=1)
+        for row in range((len(devices) + num_columns - 1) // num_columns):
+            self.device_list_frame.grid_rowconfigure(row, weight=1)
+
+
+
+
+
+
+    def open_output_selection(self, device):
+        # Create a new Toplevel window
+        output_window = tk.Toplevel(self.root)
+        output_window.title(f"Select Outputs for {device}")
+        output_window.configure(bg=self.bg_color)
+
+        # Load your images (checked and unchecked)
+        self.checked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'checked.png')).resize((20, 20)))
+        self.unchecked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'unchecked.png')).resize((20, 20)))
+
+        # Initialize the dictionary to store the output variables and buttons for this device
+        self.device_output_vars = {}
+
+        # Get previously selected outputs for the device
+        previously_selected_outputs = self.device_selected_outputs.get(device, [])
+
+        # Create a frame to hold the checkboxes and labels
+        for row, output in enumerate(self.audioStreamingInputHandler.outputs):
+            # Set the initial value of the BooleanVar based on previous selection
+            var = tk.BooleanVar(value=output in previously_selected_outputs)
+            
+            # Create a frame for each row
+            row_frame = tk.Frame(output_window, bg=self.bg_color)
+            row_frame.grid(row=row, column=0, sticky="ew", padx=10, pady=5)
+            
+            # Checkbox button
+            checkbox_button = tk.Button(row_frame, image=self.unchecked_image, command=lambda o=output, v=var: self.toggle_output_image(o, v),
+                                        bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0, cursor="hand2")
+            checkbox_button.grid(row=0, column=0, sticky="w")
+            
+            # Label for the output name
+            output_label = tk.Label(row_frame, text=output, fg=self.fg_color, bg=self.bg_color)
+            output_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+            # Store the variable and checkbox button associated with each output for this device
+            self.device_output_vars[output] = (var, checkbox_button)
+
+            # Set the checkbox image based on the initial value of var
+            checkbox_button.config(image=self.checked_image if var.get() else self.unchecked_image)
+
+        # Add an OK button to confirm selection
+        ok_button = tk.Button(output_window, text="OK", command=lambda: self.save_output_selection(output_window, device),
+                            bg=self.button_inactive_bg, fg=self.button_inactive_fg, activebackground=self.button_hover_bg,
+                            activeforeground=self.button_hover_fg, relief="flat", width=10)
+        ok_button.grid(row=len(self.audioStreamingInputHandler.outputs), column=0, pady=10, padx=10)
+
+
+    def toggle_output_image(self, output, var):
+        # Toggle the selection state
+        is_selected = not var.get()
+        var.set(is_selected)
+
+        # Get the button associated with the output
+        checkbox_button = self.device_output_vars[output][1]
+
+        # Change the image based on the new state
+        checkbox_button.config(image=self.checked_image if is_selected else self.unchecked_image)
+
+
+    def get_selected_outputs_for_device(self, device):
+        # Retrieve selected outputs for the given device
+        return [output for output, (var, _) in self.device_output_vars.items() if var.get()]
+
+    def save_output_selection(self, output_window, device):
+        # Save the selected outputs for this device
+        selected_outputs = self.get_selected_outputs_for_device(device)
+        print(f"Selected outputs for {device}: {selected_outputs}")
+
+        # Update the dictionary with the selected outputs
+        self.device_selected_outputs[device] = selected_outputs
+
+        # Close the output selection window
+        output_window.destroy()
 
 
 
@@ -447,25 +537,18 @@ class InputDeviceApp:
 
         # Update the button text and background color
         activation_button = self.get_activation_button(device)
-        activation_button.config(text=activation_button_text, bg=activation_button_bg)
+        if activation_button:
+            activation_button.config(text=activation_button_text, bg=activation_button_bg)
+        else:
+            print(f"Activation button not found for device: {device}")
 
-        # Handle the mute button based on the activation state
-        mute_button = self.get_mute_button(device)
-        if mute_button:
-            if is_activated:
-                mute_button.config(state=tk.NORMAL)
-                mute_button.config(image=self.unmute_image if not self.get_mute_var(device).get() else self.mute_image)
-                # Disable the dropdown if the device is activated
-                self.set_dropdown_state(device, state=tk.DISABLED)
-            else:
-                mute_button.config(state=tk.DISABLED)
-                self.get_mute_var(device).set(False)  # Ensure the device is unmuted
-                mute_button.config(image=self.unmute_image)
-                # Enable the dropdown if the device is deactivated
-                self.set_dropdown_state(device, state=tk.NORMAL)
+        # Handle the activation logic
+        selected_outputs = self.get_selected_outputs_for_device(device)
 
-        # Call the function to handle activation
+        # Call the function to handle activation with selected outputs
         self._handle_device_activation(device, device_index, is_activated)
+
+
 
 
     def toggle_mute(self, mute_var, device, device_index):
@@ -519,13 +602,7 @@ class InputDeviceApp:
         return None
 
     def get_activation_button(self, device):
-        # Find the activation button for the given device
-        for widget in self.device_list_frame.winfo_children():
-            if isinstance(widget, tk.Frame):
-                if widget.winfo_children():
-                    if widget.winfo_children()[0].cget("text") == device:
-                        return widget.activation_button
-        return None
+        return self.device_buttons.get(device, {}).get('activation_button')
 
     def adjust_window_size(self):
         # Update the window size to fit all content
@@ -535,9 +612,6 @@ class InputDeviceApp:
 
         # Set the window size
         self.root.geometry(f"{width}x{height}")
-
-        # Disable resizing
-        self.root.resizable(False, False)
 
     def on_closing(self):
         """Handles the GUI-specific cleanup when the window is closed."""
