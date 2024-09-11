@@ -22,9 +22,10 @@ assets_dir = os.path.join(module_dir, 'assets')
 
 class StreamingInput:
 
-    def __init__(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+    def __init__(self, inputId, inputName, outputs=[], port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         self.inputId = inputId
         self.inputName = inputName
+        self.outputs = outputs
         self.ip = get_local_ip()
         self.port = port
         self.chunk = chunk
@@ -35,6 +36,7 @@ class StreamingInput:
         self.serverThread = None
         self.clients = set()
         atexit.register(self.on_exit)
+        self._start()
 
     def _audio_stream(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,6 +46,7 @@ class StreamingInput:
 
         audio = pyaudio.PyAudio()
         print('Server listening at', (self.ip, self.port))
+
         stream = audio.open(format=self.format,
                             channels=self.channels,
                             rate=self.rate,
@@ -85,7 +88,7 @@ class StreamingInput:
             for i in self.clients:  
                 server_socket.sendto(message, i[0])
 
-    def start(self):
+    def _start(self):
         if self.serverThread and self.serverThread.is_alive():
             print(f"Stream with inputId {self.inputId} already exists")
         try:
@@ -157,29 +160,17 @@ class StreamingInputHandler:
                 self.input_update_callback()
         
 
-    def add(self, inputId, inputName, port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+    def start(self, inputId, inputName, outputs=[],port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         if inputId is None:
             raise ValueError("inputId cannot be None")
         elif self.input_in_use(inputId):
             raise ValueError("input already in use")
         else:
-            self.servers[inputId] = StreamingInput(inputId, inputName, port, chunk, format, channels, rate)
-
-    def start(self, inputId):
-        if self.input_in_use(inputId):
-            self.servers[inputId].start()
-        else:
-            raise ValueError("inputId not found")
+            self.servers[inputId] = StreamingInput(inputId, inputName, outputs, port, chunk, format, channels, rate)
         
     def stop(self, inputId):
         if self.input_in_use(inputId):
             self.servers[inputId].stop()
-        else:
-            raise ValueError("inputId not found")
-        
-    def delete(self, inputId):
-        self.stop(inputId)
-        if self.input_in_use(inputId):
             del self.servers[inputId]
         else:
             raise ValueError("inputId not found")
@@ -199,7 +190,7 @@ class StreamingInputHandler:
             if current_time - self.lastRegistration > self.registrationInterval:
                 self._update_outputs()
                 serversCopy = self.servers.copy()
-                serverList = [{'inputId': server.inputId, 'inputName': server.inputName, 'port': server.port, 'ip': server.ip} for server in serversCopy.values()]
+                serverList = [{'ip': server.ip, 'port': server.port, 'outputs': server.outputs} for server in serversCopy.values()]
 
                 url = f'http://{self.mainServer[0]}:{self.mainServer[1]}/api/streamingcontrol/input'
                 try:
@@ -222,7 +213,8 @@ class StreamingInputHandler:
         print(f"Main server updated to {self.mainServer}")
 
     def terminate(self):
-        for i in self.servers:
+        servers = self.servers.copy()
+        for i in servers:
             self.stop(i)
         if not self.registrationThreadStopFlag.is_set():
             self.registrationThreadStopFlag.set()
@@ -332,10 +324,10 @@ class InputDeviceApp:
     
     def _handle_device_activation(self, device_name, device_index, is_activated):
         if is_activated:
-            self.audioStreamingInputHandler.add(inputId=device_index, inputName=device_name)
-            self.audioStreamingInputHandler.start(inputId=device_index)
+            outputs = self.device_selected_outputs[device_name] if device_name in self.device_selected_outputs else []
+            self.audioStreamingInputHandler.start(inputId=device_index, inputName=device_name, outputs=outputs)
         else:
-            self.audioStreamingInputHandler.delete(inputId=device_index)
+            self.audioStreamingInputHandler.stop(inputId=device_index)
 
     def update_server_config(self):
         ip = self.ip_entry.get()
