@@ -17,7 +17,7 @@ from audiostreaming.utils import get_local_ip, get_input_devices
 DEFAULT_IP = "127.0.0.1"
 DEFAULT_PORT = 5000
 CONECTION_STATUS_UPDATE_INTERVAL = 1000
-INPUT_DEVICE_WIDGET_WIDTH = 260
+INPUT_DEVICE_WIDGET_WIDTH = 250
 INPUT_DEVICE_WIDGET_HEIGHT = 100
 
 module_dir = os.path.dirname(__file__)
@@ -229,6 +229,8 @@ class InputDeviceApp:
 
         self.root.title("Audio Streaming Input")
 
+        self.root.resizable(False, False)
+
         # Set dark mode colors
         self.bg_color = "#2E2E2E"
         self.fg_color = "#FFFFFF"
@@ -252,14 +254,19 @@ class InputDeviceApp:
         self.activate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'activate.png')).resize((30, 30)))
         self.deactivate_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'deactivate.png')).resize((30, 30)))
         self.ok_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'ok.png')).resize((30, 30)))
+        self.icon_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'icon.png')).resize((30, 30)))
 
+        self.root.iconphoto(False, self.icon_image)
 
+        # Frame for input devices
+        self.input_device_frame = tk.Frame(root, bg=self.bg_color)
+        self.input_device_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True, side=tk.TOP)
 
-        # Create the top frame with a fixed height
-        self.top_bar = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_bar  
-        self.top_bar.pack(pady=10, padx=10, fill=tk.X, expand=False)  # Fill horizontally but not vertically
+        # Create the top frame with a fixed height and pack it at the bottom
+        self.top_bar = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_bar
+        self.top_bar.pack(pady=10, padx=10, fill=tk.X, side=tk.BOTTOM)  # Fill horizontally and align at the bottom
 
-        # Use grid layout for precise control
+        # Use grid layout for precise control inside the top_bar
         self.top_bar.grid_rowconfigure(0, weight=1)
         self.top_bar.grid_columnconfigure(0, weight=1)  # For Refresh Devices button
         self.top_bar.grid_columnconfigure(1, weight=1)  # For IP, Port entries and Update button
@@ -268,8 +275,6 @@ class InputDeviceApp:
         self.refresh_input_devices_button = tk.Button(self.top_bar, image=self.refresh_image, command=self.refresh_input_devices,
                                         bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
         self.refresh_input_devices_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
-
-
 
         # Control Server Configuration
         self.control_server_configuration = tk.Frame(self.top_bar, bg=self.bg_color)
@@ -287,13 +292,9 @@ class InputDeviceApp:
                                         bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
         self.update_server_configuration_button.pack(side=tk.LEFT)
 
-        # Separation line
+        # Separation line above the top bar
         self.separator = tk.Frame(self.root, height=6, bd=1, relief=tk.SUNKEN, bg="#757575")  # Increased height
-        self.separator.pack(fill=tk.X)
-
-        # Frame for input devices
-        self.input_device_frame = tk.Frame(root, bg=self.bg_color)
-        self.input_device_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+        self.separator.pack(fill=tk.X, side=tk.BOTTOM)
 
         # Display all input devices
         self.refresh_input_devices()
@@ -380,11 +381,11 @@ class InputDeviceApp:
             truncated_device_name = device if len(device) <= max_device_name_length else device[:max_device_name_length - 3] + '...'
 
             device_label = tk.Label(content_frame, text=truncated_device_name, font=("Arial", 12), anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
-            device_label.pack(side=tk.TOP, padx=10, pady=5)
+            device_label.pack(side=tk.TOP, padx=5, pady=5)
 
             # Frame to hold the buttons
             buttons_frame = tk.Frame(content_frame, bg=self.bg_color)
-            buttons_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)  # Fill horizontally and align at the bottom
+            buttons_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)  # Fill horizontally and align at the bottom
 
             # Activation button (left-aligned)
             activation_var = tk.BooleanVar(value=False)
@@ -412,17 +413,17 @@ class InputDeviceApp:
         for row in range((len(self.devices) + num_columns - 1) // num_columns):
             self.input_device_frame.grid_rowconfigure(row, weight=0)  # Prevent resizing of rows
 
-
-
-
-
-
-
     def open_output_selection(self, device):
         # Create a new Toplevel window
         output_window = tk.Toplevel(self.root)
-        output_window.title(f"Select Outputs for {device}")
-        output_window.configure(bg=self.bg_color)
+        output_window.configure(bg="#ffffff")
+
+        # Remove the title bar and standard window controls
+        output_window.overrideredirect(True)
+
+        # Set the Toplevel window to be transient for the main window
+        output_window.transient(self.root)
+        output_window.grab_set()  # Make the Toplevel window modal, blocking input to other windows
 
         # Load your images (checked and unchecked)
         self.checked_image = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, 'checked.png')).resize((20, 20)))
@@ -435,12 +436,15 @@ class InputDeviceApp:
         previously_selected_outputs = self.device_selected_outputs.get(device, [])
 
         # Create a frame to hold the checkboxes and labels
+        content_frame = tk.Frame(output_window, bg=self.bg_color)
+        content_frame.pack(padx=2, pady=2, fill=tk.BOTH, expand=True)
+
         for row, output in enumerate(self.audioStreamingInputHandler.outputs):
             # Set the initial value of the BooleanVar based on previous selection
             var = tk.BooleanVar(value=output in previously_selected_outputs)
             
             # Create a frame for each row
-            row_frame = tk.Frame(output_window, bg=self.bg_color)
+            row_frame = tk.Frame(content_frame, bg=self.bg_color)
             row_frame.grid(row=row, column=0, sticky="ew", padx=10, pady=5)
             
             # Checkbox button
@@ -459,10 +463,32 @@ class InputDeviceApp:
             checkbox_button.config(image=self.checked_image if var.get() else self.unchecked_image)
 
         # Add an OK button to confirm selection
-        ok_button = tk.Button(output_window, image=self.ok_image, command=lambda: self.save_output_selection(output_window, device),
+        ok_button = tk.Button(content_frame, image=self.ok_image, command=lambda: self.save_output_selection(output_window, device),
                             bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
         ok_button.grid(row=len(self.audioStreamingInputHandler.outputs), column=0, pady=10, padx=10)
 
+        # Force the window to update and get accurate dimensions
+        output_window.update_idletasks()
+
+        # Calculate the size and position of the window
+        window_width = output_window.winfo_width()
+        window_height = output_window.winfo_height()
+
+        # Get the main window's position and size
+        main_window_x = self.root.winfo_rootx()
+        main_window_y = self.root.winfo_rooty()
+        main_window_width = self.root.winfo_width()
+        main_window_height = self.root.winfo_height()
+
+        # Calculate position to center the window relative to the main window
+        x = main_window_x + (main_window_width - window_width) // 2
+        y = main_window_y + (main_window_height - window_height) // 2
+
+        # Set the window geometry
+        output_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Ensure the window is correctly positioned
+        output_window.update()
 
 
     def toggle_output_image(self, output, var):
