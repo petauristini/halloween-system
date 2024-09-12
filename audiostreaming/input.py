@@ -127,7 +127,6 @@ class StreamingInputHandler:
         self.registrationThread = threading.Thread(target=self.register_inputs, daemon=True)
         self.registrationThread.start()
         self.pyaudio = pyaudio.PyAudio()
-        self._update_inputs()
         self._update_outputs()
         
 
@@ -147,19 +146,7 @@ class StreamingInputHandler:
             if self.output_update_callback:
                 self.output_update_callback()
                 print("callback initiated")
-
-    def _update_inputs(self):
-        new_inputs = []
-        for i in range(self.pyaudio.get_device_count()):
-            device_info = self.pyaudio.get_device_info_by_index(i)     
-            if device_info['maxInputChannels'] > 0:
-                new_inputs.append(device_info['name'])
-        if new_inputs != self.inputs:
-            self.inputs = new_inputs
-            if self.input_update_callback:
-                self.input_update_callback()
         
-
     def start(self, inputId, inputName, outputs=[],port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         if inputId is None:
             raise ValueError("inputId cannot be None")
