@@ -16,6 +16,9 @@ from audiostreaming.utils import get_local_ip, get_input_devices
 
 DEFAULT_IP = "127.0.0.1"
 DEFAULT_PORT = 5000
+CONECTION_STATUS_UPDATE_INTERVAL = 1000
+INPUT_DEVICE_WIDGET_WIDTH = 260
+INPUT_DEVICE_WIDGET_HEIGHT = 100
 
 module_dir = os.path.dirname(__file__)
 assets_dir = os.path.join(module_dir, 'assets')
@@ -146,7 +149,7 @@ class StreamingInputHandler:
             if self.output_update_callback:
                 self.output_update_callback()
                 print("callback initiated")
-        
+
     def start(self, inputId, inputName, outputs=[],port=0, chunk=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         if inputId is None:
             raise ValueError("inputId cannot be None")
@@ -222,6 +225,7 @@ class InputDeviceApp:
         # Initialize device output vars
         self.device_output_vars = {}
         self.device_selected_outputs = {}
+        self.devices = []
 
         self.root.title("Audio Streaming Input")
 
@@ -252,51 +256,47 @@ class InputDeviceApp:
 
 
         # Create the top frame with a fixed height
-        self.top_frame = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_frame
-        self.top_frame.pack(pady=10, padx=10, fill=tk.X, expand=False)  # Fill horizontally but not vertically
+        self.top_bar = tk.Frame(self.root, bg=self.bg_color, height=100)  # Set a fixed height for top_bar  
+        self.top_bar.pack(pady=10, padx=10, fill=tk.X, expand=False)  # Fill horizontally but not vertically
 
         # Use grid layout for precise control
-        self.top_frame.grid_rowconfigure(0, weight=1)
-        self.top_frame.grid_columnconfigure(0, weight=1)  # For Refresh Devices button
-        self.top_frame.grid_columnconfigure(1, weight=1)  # For IP, Port entries and Update button
+        self.top_bar.grid_rowconfigure(0, weight=1)
+        self.top_bar.grid_columnconfigure(0, weight=1)  # For Refresh Devices button
+        self.top_bar.grid_columnconfigure(1, weight=1)  # For IP, Port entries and Update button
 
         # Refresh Devices button (left aligned) with image
-        self.refresh_button = tk.Button(self.top_frame, image=self.refresh_image, command=self.refresh_display,
+        self.refresh_input_devices_button = tk.Button(self.top_bar, image=self.refresh_image, command=self.refresh_input_devices,
                                         bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
-        self.refresh_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.refresh_input_devices_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
 
-        # Frame for IP, Port entries and Update button (right aligned)
-        self.right_frame = tk.Frame(self.top_frame, bg=self.bg_color)
-        self.right_frame.grid(row=0, column=1, sticky="e")
 
-        # IP Entry
-        self.ip_entry = tk.Entry(self.right_frame, bg=self.button_active_bg, fg=self.fg_color, width=15, insertbackground=self.fg_color)
+
+        # Control Server Configuration
+        self.control_server_configuration = tk.Frame(self.top_bar, bg=self.bg_color)
+        self.control_server_configuration.grid(row=0, column=1, sticky="e")
+
+        self.ip_entry = tk.Entry(self.control_server_configuration, bg=self.button_active_bg, fg=self.fg_color, width=15, insertbackground=self.fg_color)
         self.ip_entry.insert(0, DEFAULT_IP)
         self.ip_entry.pack(side=tk.LEFT, padx=(0, 5))
 
-        # Port Entry
-        self.port_entry = tk.Entry(self.right_frame, bg=self.button_active_bg, fg=self.fg_color, width=6, insertbackground=self.fg_color)
+        self.port_entry = tk.Entry(self.control_server_configuration, bg=self.button_active_bg, fg=self.fg_color, width=6, insertbackground=self.fg_color)
         self.port_entry.insert(0, DEFAULT_PORT)
         self.port_entry.pack(side=tk.LEFT, padx=(0, 10))  # Increased padding to the right of the Port Entry
 
-        # Update button (with image)
-        self.update_button = tk.Button(self.right_frame, image=self.update_image, command=self.update_server_config,
+        self.update_server_configuration_button = tk.Button(self.control_server_configuration, image=self.update_image, command=self.update_server_config,
                                         bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
-        self.update_button.pack(side=tk.LEFT)
+        self.update_server_configuration_button.pack(side=tk.LEFT)
 
-        # Separation line with increased height
+        # Separation line
         self.separator = tk.Frame(self.root, height=6, bd=1, relief=tk.SUNKEN, bg="#757575")  # Increased height
         self.separator.pack(fill=tk.X)
 
-        # Frame for displaying devices
-        self.device_list_frame = tk.Frame(root, bg=self.bg_color)
-        self.device_list_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+        # Frame for input devices
+        self.input_device_frame = tk.Frame(root, bg=self.bg_color)
+        self.input_device_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
         # Display all input devices
-        self.display_devices()
-
-        # Adjust the window size to fit the content
-        self.adjust_window_size()
+        self.refresh_input_devices()
 
         # Update connection status periodically
         self.update_connection_status()
@@ -305,9 +305,11 @@ class InputDeviceApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.root.deiconify()
+
         print("GUI is ready...")
 
-
+    def update_input_devices(self):
+        self.devices = get_input_devices()
     
     def _handle_device_activation(self, device_name, device_index, is_activated):
         if is_activated:
@@ -319,10 +321,9 @@ class InputDeviceApp:
     def update_server_config(self):
         ip = self.ip_entry.get()
         port = self.port_entry.get()
-        # Here you can add your logic to update the server IP and port in the self.audioStreamingInputHandler
-        print(f"Server IP: {ip}, Port: {port}")
-        # Example: Update the server handler with the new IP and port
+
         self.audioStreamingInputHandler.update_main_server((ip, int(port)))
+        print(f"Control Server Updated: IP: {ip}, Port: {port}")
 
     def update_connection_status(self):
         try:
@@ -336,33 +337,24 @@ class InputDeviceApp:
             print(f"Error updating connection status: {e}")
             self.ip_entry.config(bg=self.disconnected_color)
             self.port_entry.config(bg=self.disconnected_color)
-        self.root.after(1000, self.update_connection_status)
+        self.root.after(CONECTION_STATUS_UPDATE_INTERVAL, self.update_connection_status)
 
-    def refresh_display(self):
-        print("Refreshing display...")
-        # Clear the current device list frame
-        for widget in self.device_list_frame.winfo_children():
-            widget.destroy()
+    def refresh_input_devices(self):
+        self.update_input_devices()
+        self.arrange_input_devices_widgets()
 
-        # Display updated devices
-        self.display_devices()
 
-    def display_devices(self):
+    def arrange_input_devices_widgets(self):
         # Clear the existing devices display
-        for widget in self.device_list_frame.winfo_children():
+        for widget in self.input_device_frame.winfo_children():
             widget.destroy()
 
         # Define the number of columns in the grid
         num_columns = 3  # Adjust this number based on your layout preferences
 
-        # Ensure device_list_frame uses grid layout
-        self.device_list_frame.grid_rowconfigure(0, weight=1)
-        self.device_list_frame.grid_columnconfigure(0, weight=1)
+        print("Devices:", self.devices)
 
-        devices = get_input_devices()
-        print("Devices:", devices)
-
-        if not devices:
+        if not self.devices:
             print("No devices found.")
             return
 
@@ -370,40 +362,42 @@ class InputDeviceApp:
         self.device_buttons = {}
 
         # Loop through devices and create frames for each
-        for index, device in enumerate(devices):
-            # Create a frame for each device entry
-            device_entry_frame = tk.Frame(self.device_list_frame, bd=2, relief=tk.RAISED, bg=self.bg_color)
-            device_entry_frame.grid(row=index // num_columns, column=index % num_columns, pady=5, padx=5, sticky="nsew")
-            device_entry_frame.grid_propagate(False)
+        for index, device in enumerate(self.devices):
+            # Create a frame for each device entry with a fixed size and white border
+            input_device = tk.Frame(self.input_device_frame, bd=2, relief=tk.RAISED, bg=self.bg_color, 
+                                    width=INPUT_DEVICE_WIDGET_WIDTH, height=INPUT_DEVICE_WIDGET_HEIGHT, 
+                                    highlightbackground="white", highlightcolor="white", highlightthickness=2)
+            input_device.grid(row=index // num_columns, column=index % num_columns, pady=5, padx=5)
+            input_device.grid_propagate(False)  # Prevent resizing inside the grid
 
             # Frame to hold the device name and buttons
-            content_frame = tk.Frame(device_entry_frame, bg=self.bg_color)
+            content_frame = tk.Frame(input_device, bg=self.bg_color, width=INPUT_DEVICE_WIDGET_WIDTH, height=INPUT_DEVICE_WIDGET_HEIGHT)
+            content_frame.pack_propagate(False)  # Prevent resizing inside the pack
             content_frame.pack(fill=tk.BOTH, expand=True)
 
-            # Label to display the device name
-            device_label = tk.Label(content_frame, text=device, font=("Arial", 12), wraplength=260, anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
-            device_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
+            # Label to display the device name (limited width with ellipsis)
+            max_device_name_length = 20  # Adjust this number as needed
+            truncated_device_name = device if len(device) <= max_device_name_length else device[:max_device_name_length - 3] + '...'
 
-            # Frame to hold the buttons (this is the container frame for horizontal alignment)
+            device_label = tk.Label(content_frame, text=truncated_device_name, font=("Arial", 12), anchor="w", justify="left", fg=self.fg_color, bg=self.bg_color)
+            device_label.pack(side=tk.TOP, padx=10, pady=5)
+
+            # Frame to hold the buttons
             buttons_frame = tk.Frame(content_frame, bg=self.bg_color)
-            buttons_frame.pack(side=tk.RIGHT, padx=10, pady=5)
+            buttons_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)  # Fill horizontally and align at the bottom
 
-            # Create a frame to hold the activation and select output buttons horizontally
-            buttons_container_frame = tk.Frame(buttons_frame, bg=self.bg_color)
-            buttons_container_frame.pack(side=tk.LEFT, padx=5, pady=5)
-
-            # Activation button
-            activation_var = tk.BooleanVar(value=False)  # False = Deactivated, True = Activated
-            activation_button = tk.Button(buttons_container_frame, image=self.activate_image, command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
+            # Activation button (left-aligned)
+            activation_var = tk.BooleanVar(value=False)
+            activation_button = tk.Button(buttons_frame, image=self.activate_image, command=lambda d=device, i=index, v=activation_var: self.toggle_activation(d, i, v),
                                         bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0,
                                         activebackground=self.button_hover_bg, activeforeground=self.button_hover_fg,
                                         cursor="hand2")
             activation_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            # Button to open the output selection window (using image instead of text)
-            output_button = tk.Button(buttons_container_frame, image=self.select_output_image, command=lambda d=device: self.open_output_selection(d),
+            # Button to open the output selection window (right-aligned)
+            output_button = tk.Button(buttons_frame, image=self.select_output_image, command=lambda d=device: self.open_output_selection(d),
                                     bg=self.bg_color, relief="flat", borderwidth=0, highlightthickness=0)
-            output_button.pack(side=tk.LEFT, padx=5, pady=5)
+            output_button.pack(side=tk.RIGHT, padx=5, pady=5)  # Changed to RIGHT to align it to the right side
 
             # Store references to buttons and vars in the frame
             self.device_buttons[device] = {
@@ -412,11 +406,17 @@ class InputDeviceApp:
                 'output_button': output_button
             }
 
-        # Configure grid weight for resizing
+        # Disable grid row/column resizing completely
         for col in range(num_columns):
-            self.device_list_frame.grid_columnconfigure(col, weight=1)
-        for row in range((len(devices) + num_columns - 1) // num_columns):
-            self.device_list_frame.grid_rowconfigure(row, weight=1)
+            self.input_device_frame.grid_columnconfigure(col, weight=0)  # Prevent resizing of columns
+        for row in range((len(self.devices) + num_columns - 1) // num_columns):
+            self.input_device_frame.grid_rowconfigure(row, weight=0)  # Prevent resizing of rows
+
+
+
+
+
+
 
     def open_output_selection(self, device):
         # Create a new Toplevel window
@@ -512,27 +512,8 @@ class InputDeviceApp:
         selected_outputs = self.get_selected_outputs_for_device(device)
         self._handle_device_activation(device, device_index, is_activated)
 
-    def set_dropdown_state(self, device, state):
-        # Find the dropdown menu for the given device and set its state
-        for widget in self.device_list_frame.winfo_children():
-            if isinstance(widget, tk.Frame):
-                if widget.winfo_children():
-                    if widget.winfo_children()[0].cget("text") == device:
-                        dropdown_menu = widget.dropdown_menu
-                        dropdown_menu.config(state=state)
-                        return
-
     def get_activation_button(self, device):
         return self.device_buttons.get(device, {}).get('activation_button')
-
-    def adjust_window_size(self):
-        # Update the window size to fit all content
-        self.root.update_idletasks()    
-        width = self.device_list_frame.winfo_reqwidth() + 20  # Small padding to ensure it fits well
-        height = self.device_list_frame.winfo_reqheight() + 20  # Small padding to ensure it fits well
-
-        # Set the window size
-        self.root.geometry(f"{width}x{height}")
 
     def on_closing(self):
         """Handles the GUI-specific cleanup when the window is closed."""
