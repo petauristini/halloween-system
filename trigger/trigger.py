@@ -1,7 +1,11 @@
 import logging
 from typing import Callable, Dict, Tuple
+import time
+from flask import Flask, render_template, jsonify
+import os
 
 logging.basicConfig(level=logging.INFO)
+LAST_TRIGGERED_DISPLAY_TIME = 5
 
 class CallbackNotFoundError(Exception):
     """Exception raised when a callback is not found in a Trigger."""
@@ -20,6 +24,7 @@ class Trigger:
         """
         self.triggerId = triggerId
         self.callbacks: Dict[str, Tuple[Callable, Tuple]] = {}
+        self.last_triggered = None
 
     def callback_exists(self, callbackId: str) -> bool:
         """Check if a callback exists in the trigger."""
@@ -56,11 +61,40 @@ class Trigger:
             except Exception as e:
                 logging.error(f"Error executing callback {callback} with args {args}: {e}")
 
+        self.last_triggered = time.time()
+
 class TriggerHandler:
-    def __init__(self):
+    def __init__(self, app: Flask):
         """Initialize the TriggerHandler with an empty dictionary of triggers."""
         self.triggers: Dict[str, Trigger] = {}
+        self.app = app
+        self._setup_routes()
 
+    def _setup_routes(self):
+        """Set up the Flask routes for the TriggerHandler."""
+        @self.app.route('/trigger/')
+        def dashboard():
+            return render_template('dashboard.html')
+
+        @self.app.route('/trigger/api/get_triggers')
+        def get_triggers():
+            current_time = time.time()
+            trigger_data = {}
+            for trigger_id in self.triggers.keys():
+                last_triggered = self.triggers[trigger_id].last_triggered
+                if last_triggered:
+                    time_since_trigger = current_time - last_triggered
+                    status = 'red' if time_since_trigger <= LAST_TRIGGERED_DISPLAY_TIME else 'green'
+                else:
+                    status = 'green'
+                trigger_data[trigger_id] = {
+                    'last_triggered': last_triggered,
+                    'status': status
+                }
+            return jsonify(trigger_data)
+        
+        self.app.route("/trigger/<triggerId>")(self.trigger)
+        
     def trigger_exists(self, triggerId: str) -> bool:
         """Check if a trigger exists in the handler."""
         return triggerId in self.triggers
@@ -72,16 +106,15 @@ class TriggerHandler:
             raise TriggerNotFoundError(f"Trigger with ID '{triggerId}' not found")
         return self.triggers[triggerId]
 
-    def create(self, triggerId: str):
+    def add(self, triggerId: str):
         """Create a new trigger with the specified ID."""
-        if self.trigger_exists(triggerId):
-            print("I WILL KILL YOU")
+        if self.trigger_exists(triggerId):  
             logging.warning(f"Trigger with ID {triggerId} already exists")
             return
         self.triggers[triggerId] = Trigger(triggerId)
         logging.info(f"Trigger {triggerId} created")
 
-    def delete(self, triggerId: str):
+    def remove(self, triggerId: str):
         """Delete a trigger by its ID."""
         trigger = self.get_trigger(triggerId)  # This will raise TriggerNotFoundError if not found
         del self.triggers[triggerId]
@@ -108,5 +141,15 @@ class TriggerHandler:
         
     def trigger(self, triggerId: str):
         """Execute all callbacks associated with a specific trigger."""
-        logging.info(f"Trigger {triggerId} is executing callbacks")
-        self.get_trigger(triggerId).trigger()
+        try:
+            self.get_trigger(triggerId).trigger()
+            return "", 200
+        except Exception as e:
+            logging.error(f"Error executing callbacks for trigger {triggerId}: {e}")
+            return "", 500
+
+if __name__ == '__main__':
+    app = Flask(__name__)
+    handler = TriggerHandler(app)
+    handler.add('test')
+    app.run(debug=True)

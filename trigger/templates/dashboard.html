@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trigger Dashboard</title>
+    <style>
+        #trigger-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        .trigger {
+            padding: 10px;
+            margin: 2px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+            text-align: center;
+        }
+        .red {
+            background-color: red;
+        }
+        .green {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="trigger-container"></div>
+
+    <script>
+        function updateDashboard() {
+            fetch('/trigger/api/get_triggers')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('trigger-container');
+                    container.innerHTML = '';
+
+                    for (let triggerId in data) {
+                        const trigger = data[triggerId];
+                        const div = document.createElement('div');
+                        div.className = `trigger ${trigger.status}`;
+                        div.innerHTML = `
+                            <span>${triggerId}</span>
+                            <span>
+                                ${trigger.last_triggered 
+                                    ? new Date(trigger.last_triggered * 1000)
+                                        .toLocaleString('de-CH', { 
+                                            hour: '2-digit', 
+                                            minute: '2-digit', 
+                                            second: '2-digit' 
+                                        })
+                                    : 'Never'}
+                            </span>
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+        }
+        setInterval(updateDashboard, 100);
+    </script>
+</body>
+</html>
