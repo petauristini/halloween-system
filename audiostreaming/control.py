@@ -2,6 +2,7 @@ import requests
 import logging
 from flask import Flask, request, jsonify
 import time
+import threading
 
 INPUT_TIMEOUT = 5
 
@@ -28,7 +29,7 @@ class StreamingOutput:
 
     def stop(self, server):
         try:
-            res = requests.get(f'http://{self.ip}:{self.port}/api/streamingoutput       /stop?ip={server[0]}&port={server[1]}')
+            res = requests.get(f'http://{self.ip}:{self.port}/api/streamingoutput/stop?ip={server[0]}&port={server[1]}')
             if not res.ok:
                 logging.error(f"Error stopping stream client")
         except Exception as e:
@@ -60,6 +61,8 @@ class StreamingControlServerRoutes:
         self.outputs = outputs
         self.inputs = []
         self._setup_routes()
+        thread = threading.Thread(target=self.clean_input_list, daemon=True)
+        thread.start()
       
     def _setup_routes(self):
         
@@ -74,7 +77,7 @@ class StreamingControlServerRoutes:
         @self.app.route('/api/streamingcontrol/input', methods=['POST'])
         def register():
             current_time = time.time()
-            newInputs = request.get_json()
+            newInputs = request.get_json()  
             for newInput in newInputs:
                 existing_input = next((item for item in self.inputs if item[0] == newInput), None)
                 input = (newInput, current_time)
@@ -82,17 +85,23 @@ class StreamingControlServerRoutes:
                 if existing_input:
                     self.inputs.remove(existing_input)
                 else:
+                    for output in self.new_input.outputs:
+                        output.start(input)
                     print(f'Input {input} connected') 
 
                 self.inputs.append(input)
-
+            return "", 200
+        
+    def clean_input_list(self):
+        while True:
             #Remove Timed Out Clients
             timedOutInputs = [i for i in self.inputs if time.time() - i[1] > INPUT_TIMEOUT]
             for input in timedOutInputs:
+                for output in self.input.outputs:
+                    output.stop(input)
                 self.inputs.remove(input)
                 print(f'Client {input} disconnected')
-            print(self.inputs)
-            return "", 200
+
 
 
 if __name__ == '__main__':

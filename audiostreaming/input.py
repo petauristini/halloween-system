@@ -178,7 +178,6 @@ class StreamingInputHandler:
         while not self.registrationThreadStopFlag.is_set():
             current_time = time.time()
             if current_time - self.lastRegistration > self.registrationInterval:
-                self._update_outputs()
                 serversCopy = self.servers.copy()
                 serverList = [{'ip': server.ip, 'port': server.port, 'outputs': server.outputs} for server in serversCopy.values()]
 
