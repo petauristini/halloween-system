@@ -17,12 +17,12 @@ class AudioFile:
     def _is_playing(self) -> bool:
         return self.sound.get_num_channels() > 0
         
-    def play(self, volume: float = 1.0):
+    def play(self, volume: float = 1.0, loops=0):
         if self._is_playing():
             self.stop()
         
         self.sound.set_volume(volume)
-        self.sound.play()
+        self.sound.play(loops)
 
     def stop(self):
         if self._is_playing():
@@ -80,6 +80,7 @@ class AudioPlayerServer:
         def play():
             file = request.args.get('file')
             volume = request.args.get('volume', '1')
+            loops = request.args.get('loops', '0')
 
             if not self._validate_file:
                 return jsonify(error="File not found"), 404
@@ -88,7 +89,7 @@ class AudioPlayerServer:
                 return jsonify(error="Invalid volume"), 400
             
             try:
-                self.audio_manager.audio_files[file].play(float(volume))
+                self.audio_manager.audio_files[file].play(volume=float(volume), loops=int(loops))
                 logging.info(f"Playing sound '{file}' with volume {volume}")
                 return "", 200
             except Exception as e:

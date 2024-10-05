@@ -9,9 +9,9 @@ class AudioServer:
         self.ip = ip
         self.port = port
 
-    def play(self, file: str, volume: float=1):
+    def play(self, file: str, volume: float=1, loops=0):
         try:
-            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/play', params={'file': file, 'volume': volume})
+            res = requests.get(f'http://{self.ip}:{self.port}/api/audioplayer/play', params={'file': file, 'volume': volume, 'loops': loops})
             if not res.ok:
                 logging.error(f"Error playing file '{file}'")
         except Exception as e:
@@ -45,7 +45,7 @@ class AudioServerGroup:
     def __init__(self, servers: list[AudioServer]):
         self.servers = servers
 
-    def play(self, file: str, volume: float=1):
+    def play(self, file: str, volume: float=1, loops=0):
         for server in self.servers:
             server.play(file, volume)
 
