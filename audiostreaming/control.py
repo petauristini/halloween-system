@@ -29,7 +29,7 @@ class StreamingOutput:
 
     def stop(self, server):
         try:
-            res = requests.get(f'http://{self.ip}:{self.port}/api/streamingoutput/stop?ip={server[0]}&port={server[1]}')
+            res = requests.get(f'http://{self.ip}:{self.port}/api/streamingoutput/stop?ip={server[0]}&port={server[1]}', timeout=1)
             if not res.ok:
                 logging.error(f"Error stopping stream client")
         except Exception as e:
@@ -80,32 +80,45 @@ class StreamingControlServerRoutes:
             newInputs = request.get_json()  
             for newInput in newInputs:
                 existing_input = next((item for item in self.inputs if item[0] == newInput), None)
-                input = (newInput, current_time)
+                input = (newInput, current_time, False)
 
                 if existing_input:
                     self.inputs.remove(existing_input)
                 else:
-                    for output in self.new_input.outputs:
-                        output.start(input)
                     print(f'Input {input} connected') 
 
                 self.inputs.append(input)
+
             return "", 200
         
     def clean_input_list(self):
         while True:
-            #Remove Timed Out Clients
             timedOutInputs = [i for i in self.inputs if time.time() - i[1] > INPUT_TIMEOUT]
+            
             for input in timedOutInputs:
-                for output in self.input.outputs:
-                    output.stop(input)
+                for output in input[0]["outputs"]:
+                    try:
+                        outputs[output].stop((input[0]["ip"], input[0]["port"]))
+                    except Exception as e:
+                        print(e)
                 self.inputs.remove(input)
                 print(f'Client {input} disconnected')
+
+            for i, input in enumerate(self.inputs):
+                if not input[2]:
+                    try:
+                        for output in input[0]["outputs"]:
+                            outputs[output].start((input[0]["ip"], input[0]["port"]))
+                        self.inputs[i] = (input[0], input[1], True)
+                    except Exception as e:
+                        print(e)
+                    
+
 
 
 
 if __name__ == '__main__':
-    testdict = {"output1": StreamingOutput("127.0.0.1", 5000), "output2": StreamingOutput("127.0.0.1", 5001), "output3": StreamingOutputGroup([StreamingOutput("127.0.0.1", 5002), StreamingOutput("127.0.0.1", 5003)])}
+    outputs = {"localoutput": StreamingOutput("127.0.0.1", 5001)}
     app = Flask(__name__)
-    server = StreamingControlServerRoutes(app, testdict)
-    app.run(debug=True)
+    server = StreamingControlServerRoutes(app, outputs)
+    app.run(debug=False)

@@ -32,6 +32,7 @@ class StreamingOutput:
                                       output=True,
                                       frames_per_buffer=self.chunk)
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.clientSocket.settimeout(1)
         self.socketAddress = self.server
         print('Connecting to server at', self.socketAddress)
         self.clientSocket.sendto(b"Client connected", self.socketAddress)
@@ -65,7 +66,6 @@ class StreamingOutput:
 
             except Exception as e:
                 print(f"Error: {e}")
-                break
 
     def stop(self):
             self.stopThreadFlag.set()
@@ -141,7 +141,7 @@ class AudioStreamingOutputServer:
             ip = request.args.get('ip')
             port = request.args.get('port')
             
-            print (ip, port)
+
             if not ip or not port:
                 return jsonify(error="Missing IP or port"), 400
             
@@ -159,11 +159,15 @@ class AudioStreamingOutputServer:
             ip = request.args.get('ip')
             port = request.args.get('port')
 
+
+            if not ip or not port:
+                return jsonify(error="Missing IP or port"), 400
+            
             if not ( self._validate_ip(ip) and self._validate_port(int(port)) ):
                 return jsonify(error="Invalid IP or port"), 400
 
             server = (ip, int(port))
-
+            
             self.stream_client_handler.stop(server)
 
             return "", 200
@@ -171,4 +175,4 @@ class AudioStreamingOutputServer:
 if __name__ == '__main__':
     app = Flask(__name__)
     server = AudioStreamingOutputServer(app)
-    app.run(debug=True)
+    app.run(port=5001, debug=True)
