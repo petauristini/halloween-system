@@ -199,6 +199,7 @@ class StreamingInputHandler:
 
     def update_main_server(self, mainServer):
         self.mainServer = mainServer
+        self._update_outputs()
         print(f"Main server updated to {self.mainServer}")
 
     def terminate(self):
