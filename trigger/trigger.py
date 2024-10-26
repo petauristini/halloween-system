@@ -3,6 +3,7 @@ from typing import Callable, Dict, Tuple
 import time
 from flask import Flask, render_template, jsonify
 import os
+import requests
 
 logging.basicConfig(level=logging.INFO)
 LAST_TRIGGERED_DISPLAY_TIME = 5
@@ -39,6 +40,11 @@ class Trigger:
             logging.debug(f"Callback {callbackId} added to trigger {self.triggerId}")
         else:
             logging.debug(f"Callback {callbackId} already exists in trigger {self.triggerId}")
+
+    def add_http_callback(self, callbackId: str, address: str):
+        """Add an HTTP callback to the trigger."""
+        self.add_callback(callbackId, (requests.get, (address,)))
+
 
     def remove_callback(self, callbackId: str):
         """Remove a callback from the trigger."""
@@ -136,6 +142,11 @@ class TriggerHandler:
     def add_callback(self, triggerId: str, callbackId: str, callback: Tuple[Callable, Tuple]):
         """Add a callback to a specific trigger."""
         self.get_trigger(triggerId).add_callback(callbackId, callback)
+        logging.debug(f"Callback {callbackId} added to trigger {triggerId}")
+
+    def add_http_callback(self, triggerId: str, callbackId: str, address: str):
+        """Add a callback to a specific trigger."""
+        self.get_trigger(triggerId).add_http_callback(callbackId, address)
         logging.debug(f"Callback {callbackId} added to trigger {triggerId}")
         
     def remove_callback(self, triggerId: str, callbackId: str):
