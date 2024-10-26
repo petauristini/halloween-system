@@ -19,20 +19,6 @@ void function2() {
   server.send(200, "text/plain", "Function 2 executed!");
 }
 
-// General trigger handler for dynamic routing
-void handleTrigger() {
-  String path = server.uri();
-
-  if (path == "/trigger/function1") {
-    function1();
-  } else if (path == "/trigger/function2") {
-    function2();
-  } else {
-    // Handle unknown trigger function
-    server.send(404, "text/plain", "Function not found!");
-  }
-}
-
 void setup() {
   Serial.begin(115200);
 
@@ -50,8 +36,8 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   // Define the general /trigger endpoint
-  server.on("/trigger/function1", HTTP_GET, handleTrigger);
-  server.on("/trigger/function2", HTTP_GET, handleTrigger);
+  server.on("/trigger/function1", HTTP_GET, function1);
+  server.on("/trigger/function2", HTTP_GET, function2);
 
   // Start the server
   server.begin();
