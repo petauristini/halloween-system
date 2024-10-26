@@ -24,7 +24,6 @@ class Wled:
 
     def off(self):
         url = f'{self.base_url}&T=0' 
-        print(url)
         try:
             res = requests.get(url)
             if not res.ok:
