@@ -118,7 +118,7 @@ class StreamingControlServerRoutes:
 
 
 if __name__ == '__main__':
-    outputs = {"localoutput": StreamingOutput("127.0.0.1", 5001)}
+    outputs = {"localoutput": StreamingOutput("127.0.0.1", 5001), "remioutput": StreamingOutput("192.168.6.240", 5001)}
     app = Flask(__name__)
     server = StreamingControlServerRoutes(app, outputs)
-    app.run(debug=False)
+    app.run(debug=False, host='0.0.0.0')
