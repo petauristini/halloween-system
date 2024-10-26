@@ -6,6 +6,7 @@ import os
 
 logging.basicConfig(level=logging.INFO)
 LAST_TRIGGERED_DISPLAY_TIME = 5
+TRIGGER_COOLDOWN_TIME = 5
 
 class CallbackNotFoundError(Exception):
     """Exception raised when a callback is not found in a Trigger."""
@@ -16,7 +17,7 @@ class TriggerNotFoundError(Exception):
     pass
 
 class Trigger:
-    def __init__(self, triggerId: str):
+    def __init__(self, triggerId: str, deactivate_cooldown: bool = False):
         """
         Initialize a Trigger with a unique ID.
 
@@ -24,7 +25,8 @@ class Trigger:
         """
         self.triggerId = triggerId
         self.callbacks: Dict[str, Tuple[Callable, Tuple]] = {}
-        self.last_triggered = None
+        self.last_triggered = 0
+        self.deactivate_cooldown = deactivate_cooldown
 
     def callback_exists(self, callbackId: str) -> bool:
         """Check if a callback exists in the trigger."""
@@ -53,15 +55,18 @@ class Trigger:
 
     def trigger(self):
         """Trigger all callbacks associated with this trigger."""
-        logging.info(f"Trigger {self.triggerId} executing callbacks")
-        for callback, args in self.callbacks.values():
-            logging.debug(f"Trigger {self.triggerId} calling callback {callback} with args {args}")
-            try:
-                callback(*args)
-            except Exception as e:
-                logging.error(f"Error executing callback {callback} with args {args}: {e}")
+        print(f"Trigger {self.triggerId} triggered")
 
-        self.last_triggered = time.time()
+        if (time.time() - self.last_triggered > TRIGGER_COOLDOWN_TIME) or self.deactivate_cooldown:
+            logging.info(f"Trigger {self.triggerId} executing callbacks")
+            for callback, args in self.callbacks.values():
+                logging.debug(f"Trigger {self.triggerId} calling callback {callback} with args {args}")
+                try:
+                    callback(*args)
+                except Exception as e:
+                    logging.error(f"Error executing callback {callback} with args {args}: {e}")
+
+            self.last_triggered = time.time()
 
 class TriggerHandler:
     def __init__(self, app: Flask):
@@ -107,12 +112,12 @@ class TriggerHandler:
             raise TriggerNotFoundError(f"Trigger with ID '{triggerId}' not found")
         return self.triggers[triggerId]
 
-    def add(self, triggerId: str):
+    def add(self, triggerId: str, deactivate_cooldown: bool = False):
         """Create a new trigger with the specified ID."""
         if self.trigger_exists(triggerId):  
             logging.warning(f"Trigger with ID {triggerId} already exists")
             return
-        self.triggers[triggerId] = Trigger(triggerId)
+        self.triggers[triggerId] = Trigger(triggerId, deactivate_cooldown)
         logging.info(f"Trigger {triggerId} created")
 
     def remove(self, triggerId: str):
