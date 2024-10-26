@@ -55,8 +55,6 @@ class Trigger:
 
     def trigger(self):
         """Trigger all callbacks associated with this trigger."""
-        print(f"Trigger {self.triggerId} triggered")
-
         if (time.time() - self.last_triggered > TRIGGER_COOLDOWN_TIME) or self.deactivate_cooldown:
             logging.info(f"Trigger {self.triggerId} executing callbacks")
             for callback, args in self.callbacks.values():
