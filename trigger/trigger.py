@@ -74,7 +74,8 @@ class TriggerHandler:
         """Set up the Flask routes for the TriggerHandler."""
         @self.app.route('/trigger/')
         def dashboard():
-            return render_template('dashboard.html')
+            self.app.template_folder = os.path.join(os.path.dirname(__file__), "templates")
+            return render_template("dashboard.html")
 
         @self.app.route('/trigger/api/get_triggers')
         def get_triggers():
@@ -151,5 +152,5 @@ class TriggerHandler:
 if __name__ == '__main__':
     app = Flask(__name__)
     handler = TriggerHandler(app)
-    handler.add('test')
-    app.run(debug=True)
+    handler.add('trigger1')
+    app.run(debug=True, host='0.0.0.0')
