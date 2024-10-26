@@ -133,7 +133,7 @@ class AudioStreamingOutputServer:
     def _setup_routes(self):
         
         @self.app.route('/api/streamingoutput/ping', methods=['GET'])
-        def ping():
+        def ping_streaming_output():
             return "", 200
         
         @self.app.route('/api/streamingoutput/start', methods=['GET'])
@@ -155,7 +155,7 @@ class AudioStreamingOutputServer:
             return "", 200
         
         @self.app.route('/api/streamingoutput/stop', methods=['GET'])
-        def stop():
+        def stop_streaming_output():
             ip = request.args.get('ip')
             port = request.args.get('port')
 

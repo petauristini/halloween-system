@@ -65,7 +65,7 @@ class AudioPlayerServer:
     def _setup_routes(self):
         
         @self.app.route('/api/audioplayer/ping', methods=['GET'])
-        def ping():
+        def ping_audio_player():
             return "", 200
         
         @self.app.route('/api/audioplayer/update', methods=['GET'])
@@ -96,7 +96,7 @@ class AudioPlayerServer:
                 return jsonify(error=str(e)), 500
 
         @self.app.route('/api/audioplayer/stop', methods=['GET'])
-        def stop():
+        def stop_audio_player():
             file = request.args.get('file')
 
             if not self._validate_file(file):
