@@ -18,6 +18,7 @@
             justify-content: space-between;
             flex-direction: column;
             text-align: center;
+            cursor: pointer;
         }
         .red {
             background-color: red;
@@ -55,11 +56,26 @@
                                     : 'Never'}
                             </span>
                         `;
+
+                        div.addEventListener('click', () => {
+                            fetch(`/trigger//${triggerId}`)
+                            .then(response => {
+                                if (response.ok) {
+                                    console.log(`Trigger ${triggerId} activated.`);
+                                } else {
+                                    console.error('Failed to activate trigger:', response.statusText);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                            });
+                        });
+
                         container.appendChild(div);
                     }
                 });
         }
-        setInterval(updateDashboard, 100);
+        setInterval(updateDashboard, 1000);
     </script>
 </body>
 </html>
