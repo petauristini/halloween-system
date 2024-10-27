@@ -57,7 +57,8 @@ class AudioServerGroup:
     def check_connection(self):
         results = []
         for server in self.servers:
-            result = server.check_connection()
+            results.append(server.check_connection())
+        return results
 
     def update(self):
         for server in self.servers:
