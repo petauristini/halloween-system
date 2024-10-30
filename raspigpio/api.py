@@ -5,8 +5,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 class GPIOPin:
-    def __init__(self, server: tuple, pin: int):
-        self.server = server
+    def __init__(self, ip: str, port: int, pin: int):
+        self.server = (ip, port)
         self.pin = pin
 
     def check_connection(self):
