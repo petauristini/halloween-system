@@ -115,6 +115,9 @@ class GPIOHandlerServer:
             self.gpio_handler.turn_off(id)
             return "", 200
         
+    def add(self, pin: int):
+        self.gpio_handler.add(pin)
+        
 if __name__ == "__main__":
     app = Flask(__name__)
     server = GPIOHandlerServer(app, 17)
