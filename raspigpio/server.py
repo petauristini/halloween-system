@@ -2,8 +2,8 @@ import logging
 import RPi.GPIO as GPIO
 import time
 import threading
-from flask import Flask
-from requests import request
+from flask import Flask, request
+import requests
 
 logging.basicConfig(level=logging.INFO)
 
