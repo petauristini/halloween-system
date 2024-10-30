@@ -3,7 +3,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-class AudioServer:
+class AudioPlayer:
 
     def __init__(self, ip: str, port: int):
         self.ip = ip
@@ -40,9 +40,9 @@ class AudioServer:
         except Exception as e:
             logging.error(f"Connection error: {e}")
 
-class AudioServerGroup:
+class AudioPlayerGroup:
 
-    def __init__(self, servers: list[AudioServer]):
+    def __init__(self, servers: list[AudioPlayer]):
         self.servers = servers
 
     def play(self, file: str, volume: float=1, loops=0):
@@ -66,6 +66,6 @@ class AudioServerGroup:
 
 
 if __name__ == '__main__':
-    server = AudioServer('localhost', 5000)
+    server = AudioPlayer('localhost', 5000)
     while True:
         eval(input(">>"))
