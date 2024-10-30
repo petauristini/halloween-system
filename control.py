@@ -3,7 +3,7 @@ from audioplayer.api import AudioPlayer, AudioPlayerGroup
 from flask import Flask
 import logging
 from wled.api import Wled, WledGroup
-from raspigpio.api import GPIOPin, GPIOPinGroup 
+from raspigpio.api import GPIOPin, GPIOGroup 
 
 flask_logger = logging.getLogger('werkzeug')
 flask_logger.setLevel(logging.WARNING)
@@ -29,7 +29,7 @@ all_wleds = WledGroup([wled_1, wled_2, wled_3])
 smoke_module_1 = GPIOPin("192.168.1.130", 5)
 smoke_module_2 = GPIOPin("192.168.1.131", 5)
 smoke_module_3 = GPIOPin("192.168.1.132", 5)
-all_smoke_modules = GPIOPinGroup([smoke_module_1, smoke_module_2, smoke_module_3])
+all_smoke_modules = GPIOGroup([smoke_module_1, smoke_module_2, smoke_module_3])
 
 # Triggers
 trigger_handler.add('motion_sensor_1')
