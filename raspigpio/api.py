@@ -36,7 +36,7 @@ class GPIOPin:
         except Exception as e:
             logging.error(f"Connection error: {e}")
 
-    def turn_off(self, duration: int):
+    def turn_on_for(self, duration: int):
         url = f"http://{self.server[0]}:{self.server[1]}/api/raspigpio/on?pin={self.pin}&duration={duration}"
         try:
             res = requests.get(url)

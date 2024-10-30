@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import time
 import threading
 from flask import Flask
-import requests
+from requests import request
 
 logging.basicConfig(level=logging.INFO)
 
@@ -101,8 +101,8 @@ class GPIOHandlerServer:
 
         @self.app.route('/api/raspigpio/on', methods=['GET'])
         def turn_on_pin():
-            pin = requests.args.get('pin')
-            duration = requests.args.get('duration', None)
+            pin = request.args.get('pin')
+            duration = request.args.get('duration', None)
             if duration is not None:
                 self.gpio_handler.turn_on_for(pin, duration)
             else:
@@ -111,12 +111,9 @@ class GPIOHandlerServer:
 
         @self.app.route('/api/raspigpio/off', methods=['GET'])
         def turn_off_pin():
-            pin = requests.args.get('pin')
+            pin = request.args.get('pin')
             self.gpio_handler.turn_off(id)
             return "", 200
-        
-    def add(self, pin: int):
-        self.gpio_handler.add(pin)
         
 if __name__ == "__main__":
     app = Flask(__name__)
