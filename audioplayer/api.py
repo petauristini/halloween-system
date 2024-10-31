@@ -47,7 +47,7 @@ class AudioPlayerGroup:
 
     def play(self, file: str, volume: float=1, loops=0):
         for server in self.servers:
-            server.play(file, volume)
+            server.play(file, volume, loops=loops)
 
 
     def stop(self, file: str):

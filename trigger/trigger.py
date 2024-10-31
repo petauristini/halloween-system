@@ -7,7 +7,7 @@ import requests
 
 logging.basicConfig(level=logging.INFO)
 LAST_TRIGGERED_DISPLAY_TIME = 5
-TRIGGER_COOLDOWN_TIME = 5
+TRIGGER_COOLDOWN_TIME = 20
 
 class CallbackNotFoundError(Exception):
     """Exception raised when a callback is not found in a Trigger."""
