@@ -59,7 +59,7 @@ trigger_handler.add('stop_audio_scare', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_audio_scare', 'stop_audio_callback_scare', (all_audio_players.stop, ("scare",)))
 
 trigger_handler.add('play_audio_theme', deactivate_cooldown=True)
-trigger_handler.add_callback('play_audio_theme', 'play_audio_callback_theme', (all_audio_players.play, ("theme",)))
+trigger_handler.add_callback('play_audio_theme', 'play_audio_callback_theme', (all_audio_players.play, ("theme", -1)))
 
 trigger_handler.add('stop_audio_theme', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_audio_theme', 'stop_audio_callback_theme', (all_audio_players.stop, ("theme",)))
