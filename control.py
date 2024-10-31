@@ -59,7 +59,7 @@ trigger_handler.add('stop_smoke', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_smoke', 'stop_smoke_callback', (all_smoke_modules.turn_off, ()))
 
 trigger_handler.add('stop_audio', deactivate_cooldown=True)
-trigger_handler.add_callback('stop_audio', 'stop_audio_callback', (all_audio_players.stop, ()))
+trigger_handler.add_callback('stop_audio', 'stop_audio_callback', (all_audio_players.stop, ("nggup")))
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=7000)
