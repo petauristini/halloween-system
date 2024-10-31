@@ -77,6 +77,11 @@ trigger_handler.add_callback('audio_player_1_rickroll', 'audio_player_callback_1
 trigger_handler.add('audio_player_1_stop_rickroll', deactivate_cooldown=True)
 trigger_handler.add_callback('audio_player_1_stop_rickroll', 'audio_player_callback_1_stop_rickroll', (audio_player_1.stop, ("rickroll",)))
 
+trigger_handler.add('audio_player_2_rickroll', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_2_rickroll', 'audio_player_callback_2_rickroll', (audio_player_2.play, ("rickroll",)))
+
+trigger_handler.add('audio_player_2_stop_rickroll', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_2_stop_rickroll', 'audio_player_callback_2_stop_rickroll', (audio_player_2.stop, ("rickroll",)))
 # trigger_handler.add('stop_smoke', deactivate_cooldown=True)
 # trigger_handler.add_callback('stop_smoke', 'stop_smoke_callback', (all_smoke_modules.turn_off, ()))
 
