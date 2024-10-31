@@ -38,6 +38,7 @@ all_wleds = WledGroup([wled_1, wled_2, wled_3])
 
 # Triggers
 trigger_handler.add('motion_sensor_1')
+trigger_handler.add_callback('motion_sensor_1', 'motion_sensor_callback_1', (audio_player_1.play, ("scare",)))
 trigger_handler.add('motion_sensor_2')
 trigger_handler.add('motion_sensor_3')
 trigger_handler.add('doorbell_sensor')
