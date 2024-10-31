@@ -38,13 +38,13 @@ trigger_handler.add('motion_sensor_3')
 trigger_handler.add('doorbell_sensor')
 
 trigger_handler.add('smoke_module_1', deactivate_cooldown=True)
-trigger_handler.add_http_callback('smoke_module_1', 'smoke_module_1_callback', (smoke_module_1.turn_on_for, (5,)))
+trigger_handler.add_callback('smoke_module_1', 'smoke_module_1_callback', (smoke_module_1.turn_on_for, (5,)))
 
 trigger_handler.add('smoke_module_2', deactivate_cooldown=True)
-trigger_handler.add_http_callback('smoke_module_2', 'smoke_module_2_callback', (smoke_module_2.turn_on_for, (5,)))
+trigger_handler.add_callback('smoke_module_2', 'smoke_module_2_callback', (smoke_module_2.turn_on_for, (5,)))
 
 trigger_handler.add('smoke_module_3', deactivate_cooldown=True)
-trigger_handler.add_http_callback('smoke_module_3', 'smoke_module_3_callback', (smoke_module_3.turn_on_for, (5,)))
+trigger_handler.add_callback('smoke_module_3', 'smoke_module_3_callback', (smoke_module_3.turn_on_for, (5,)))
 
 trigger_handler.add('stop_smoke', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_smoke', 'stop_smoke_callback', (all_smoke_modules.turn_off, ()))
