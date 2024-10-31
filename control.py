@@ -4,6 +4,7 @@ from flask import Flask
 import logging
 from wled.api import Wled, WledGroup
 from raspigpio.api import GPIOPin, GPIOGroup 
+from audiostreaming.control import StreamingOutput, StreamingControlServerRoutes
 
 flask_logger = logging.getLogger('werkzeug')
 flask_logger.setLevel(logging.WARNING)
@@ -18,6 +19,10 @@ audio_player_1 = AudioPlayer('192.168.1.93', 5000)
 audio_player_2 = AudioPlayer('192.168.1.90', 5000)
 audio_player_3 = AudioPlayer('192.168.1.89', 5000)
 all_audio_players = AudioPlayerGroup([audio_player_1, audio_player_2, audio_player_3])
+
+# Audio Streaming
+outputs = {"raspi-speaker-1": StreamingOutput('192.168.1.93', 5000)}
+audio_streaming_control_server = StreamingControlServerRoutes(app, outputs)
 
 # WLED
 wled_1 = Wled('192.168.1.78')
