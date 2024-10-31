@@ -98,7 +98,7 @@ class StreamingControlServerRoutes:
             for input in timedOutInputs:
                 for output in input[0]["outputs"]:
                     try:
-                        outputs[output].stop((input[0]["ip"], input[0]["port"]))
+                        self.outputs[output].stop((input[0]["ip"], input[0]["port"]))
                     except Exception as e:
                         print(e)
                 self.inputs.remove(input)
@@ -108,7 +108,7 @@ class StreamingControlServerRoutes:
                 if not input[2]:
                     try:
                         for output in input[0]["outputs"]:
-                            outputs[output].start((input[0]["ip"], input[0]["port"]))
+                            self.outputs[output].start((input[0]["ip"], input[0]["port"]))
                         self.inputs[i] = (input[0], input[1], True)
                     except Exception as e:
                         print(e)
@@ -118,7 +118,7 @@ class StreamingControlServerRoutes:
 
 
 if __name__ == '__main__':
-    outputs = {"localoutput": StreamingOutput("127.0.0.1", 5001), "remioutput": StreamingOutput("192.168.6.240", 5001)}
+    outputs = {"speaker-1": StreamingOutput("127.0.0.1", 5001), "remioutput": StreamingOutput("192.168.6.240", 5001)}
     app = Flask(__name__)
     server = StreamingControlServerRoutes(app, outputs)
     app.run(debug=False, host='0.0.0.0')
