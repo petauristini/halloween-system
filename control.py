@@ -14,9 +14,9 @@ app = Flask(__name__)
 trigger_handler = TriggerHandler(app)
 
 # Audio Players
-audio_player_1 = AudioPlayer('192.168.1.110', 5000)
-audio_player_2 = AudioPlayer('192.168.1.111', 5000)
-audio_player_3 = AudioPlayer('192.168.1.112', 5000)
+audio_player_1 = AudioPlayer('192.168.1.88', 5000)
+audio_player_2 = AudioPlayer('192.168.1.90', 5000)
+audio_player_3 = AudioPlayer('192.168.1.89', 5000)
 all_audio_players = AudioPlayerGroup([audio_player_1, audio_player_2, audio_player_3])
 
 # WLED
@@ -26,9 +26,9 @@ wled_3 = Wled('192.168.1.122')
 all_wleds = WledGroup([wled_1, wled_2, wled_3])
 
 # Smoke Modules
-smoke_module_1 = GPIOPin("192.168.1.130", 5000, "smoke")
-smoke_module_2 = GPIOPin("192.168.1.131", 5000, "smoke")
-smoke_module_3 = GPIOPin("192.168.1.132", 5000, "smoke")
+smoke_module_1 = GPIOPin("192.168.1.88", 5000, "smoke")
+smoke_module_2 = GPIOPin("192.168.1.90", 5000, "smoke")
+smoke_module_3 = GPIOPin("192.168.1.89", 5000, "smoke")
 all_smoke_modules = GPIOGroup([smoke_module_1, smoke_module_2, smoke_module_3])
 
 # Triggers
@@ -45,6 +45,15 @@ trigger_handler.add_callback('smoke_module_2', 'smoke_module_2_callback', (smoke
 
 trigger_handler.add('smoke_module_3', deactivate_cooldown=True)
 trigger_handler.add_callback('smoke_module_3', 'smoke_module_3_callback', (smoke_module_3.turn_on_for, (5,)))
+
+trigger_handler.add('audio_player_1', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_1', 'audio_player_callback_1', (audio_player_1.play, ("nggup",)))
+
+trigger_handler.add('audio_player_2', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_2', 'audio_player_callback_2', (audio_player_2.play, ("nggup",)))
+
+trigger_handler.add('audio_player_3', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_3', 'audio_player_callback_3', (audio_player_3.play, ("nggup",)))
 
 trigger_handler.add('stop_smoke', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_smoke', 'stop_smoke_callback', (all_smoke_modules.turn_off, ()))
