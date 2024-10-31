@@ -46,20 +46,27 @@ trigger_handler.add_callback('smoke_module_2', 'smoke_module_2_callback', (smoke
 trigger_handler.add('smoke_module_3', deactivate_cooldown=True)
 trigger_handler.add_callback('smoke_module_3', 'smoke_module_3_callback', (smoke_module_3.turn_on_for, (5,)))
 
-trigger_handler.add('audio_player_1', deactivate_cooldown=True)
-trigger_handler.add_callback('audio_player_1', 'audio_player_callback_1', (audio_player_1.play, ("nggup",)))
+trigger_handler.add('audio_player_1_scare', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_1_scare', 'audio_player_callback_1_scare', (audio_player_1.play, ("scare",)))
 
-trigger_handler.add('audio_player_2', deactivate_cooldown=True)
-trigger_handler.add_callback('audio_player_2', 'audio_player_callback_2', (audio_player_2.play, ("nggup",)))
+trigger_handler.add('audio_player_2_scare', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_2_scare', 'audio_player_callback_2_scare', (audio_player_2.play, ("scare",)))
 
-trigger_handler.add('audio_player_3', deactivate_cooldown=True)
-trigger_handler.add_callback('audio_player_3', 'audio_player_callback_3', (audio_player_3.play, ("nggup",)))
+trigger_handler.add('audio_player_3_scare', deactivate_cooldown=True)
+trigger_handler.add_callback('audio_player_3_scare', 'audio_player_callback_3_scare', (audio_player_3.play, ("scare",)))
+
+trigger_handler.add('stop_audio_scare', deactivate_cooldown=True)
+trigger_handler.add_callback('stop_audio_scare', 'stop_audio_callback_scare', (all_audio_players.stop, ("scare",)))
+
+trigger_handler.add('play_audio_theme', deactivate_cooldown=True)
+trigger_handler.add_callback('play_audio_theme', 'play_audio_callback_theme', (all_audio_players.play, ("theme",)))
+
+trigger_handler.add('stop_audio_theme', deactivate_cooldown=True)
+trigger_handler.add_callback('stop_audio_theme', 'stop_audio_callback_theme', (all_audio_players.stop, ("theme",)))
 
 trigger_handler.add('stop_smoke', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_smoke', 'stop_smoke_callback', (all_smoke_modules.turn_off, ()))
 
-trigger_handler.add('stop_audio', deactivate_cooldown=True)
-trigger_handler.add_callback('stop_audio', 'stop_audio_callback', (all_audio_players.stop, ("nggup",)))
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=7000)
