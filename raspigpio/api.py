@@ -5,43 +5,41 @@ logging.basicConfig(level=logging.INFO)
 
 
 class GPIOPin:
-    def __init__(self, ip: str, port: int, pin: int):
-        self.server = (ip, port)
-        self.pin = pin
+    def __init__(self, ip: str, port: int, id: int):
+        self.ip = ip
+        self.port = port
+        self.id = id
+        self.base_url = f"http://{self.ip}:{self.port}/api/gpio/{self.id}"
 
     def check_connection(self):
-        url = f"http://{self.server[0]}:{self.server[1]}/api/raspigpio/ping"
         try:
-            res = requests.get(url)
+            res = requests.get(f"{self.base_url}/ping")
             if not res.ok:
-                logging.error(f"Error pinging pin {self.pin}")
+                logging.error(f"Error pinging pin {self.id}")
         except Exception as e:
             logging.error(f"Connection error: {e}")
 
-    def turn_on(self):
-        url = f"http://{self.server[0]}:{self.server[1]}/api/raspigpio/on/?pin={self.pin}"
+    def turn_on(self, duration: int = None):
         try:
-            res = requests.get(url)
+            res = requests.get(f"{self.base_url}/on")
             if not res.ok:
-                logging.error(f"Error turning on pin {self.pin}")
+                logging.error(f"Error turning on pin {self.id}")
+        except Exception as e:
+            logging.error(f"Connection error: {e}")
+
+    def turn_on_for(self, duration: int):
+        try:
+            res = requests.get(f"{self.base_url}/on?duration={duration}")
+            if not res.ok:
+                logging.error(f"Error turning on pin {self.id}")
         except Exception as e:
             logging.error(f"Connection error: {e}")
 
     def turn_off(self):
-        url = f"http://{self.server[0]}:{self.server[1]}/api/raspigpio/off?pin={self.pin}"
         try:
-            res = requests.get(url)
+            res = requests.get(f"{self.base_url}/off")
             if not res.ok:
-                logging.error(f"Error turning off pin {self.pin}")
-        except Exception as e:
-            logging.error(f"Connection error: {e}")
-
-    def turn_off(self, duration: int):
-        url = f"http://{self.server[0]}:{self.server[1]}/api/raspigpio/on?pin={self.pin}&duration={duration}"
-        try:
-            res = requests.get(url)
-            if not res.ok:
-                logging.error(f"Error turning on pin {self.pin}")
+                logging.error(f"Error turning off pin {self.id}")
         except Exception as e:
             logging.error(f"Connection error: {e}")
 

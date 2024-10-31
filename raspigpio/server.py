@@ -2,8 +2,7 @@ import logging
 import RPi.GPIO as GPIO
 import time
 import threading
-from flask import Flask
-import requests
+from flask import Flask, request
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,61 +59,35 @@ class GPIOPin:
         GPIO.cleanup()
         logging.debug(f"Cleaned up GPIOs")
 
-class GPIOHandler:
-    def __init__(self):
-        self.outputs = {}
-
-    def get_outputs(self):
-        return self.outputs
-    
-    def _pin_exists(self, pin: int):
-        return pin in self.outputs
-    
-    def add(self, pin: int):
-        if self._pin_exists(pin):
-            logging.warning(f"Pin {pin} is already exists")
-            return
-        self.outputs[pin] = GPIOPin(pin)
-        logging.info(f"Pin {pin} created")
-
-    def turn_on(self, pin: int):
-        if not self._pin_exists(pin):
-            logging.error(f"Pin '{pin}' not found")
-        self.outputs[pin].turn_on()
-
-    def turn_on_for(self, pin: str, duration: int):
-        if not self._pin_exists(pin):
-            logging.error(f"Pin '{pin}' not found")
-        self.outputs[pin].turn_on_for(duration)
-
-class GPIOHandlerServer:
-    def __init__(self, app: Flask):
+class GPIOPinServer:
+    def __init__(self, app: Flask, pin: int, id: str):
         self.app = app
-        self.gpio_handler = GPIOHandler()
+        self.id = id
+        self.pin = pin
+        self.gpio_pin = GPIOPin(pin)
         self._setup_routes()
 
     def _setup_routes(self):
-
-        @self.app.route('/api/raspigpio/ping', methods=['GET'])
+        @self.app.route(f'/api/gpio/{self.id}/ping', methods=['GET'])
         def ping_gpio_handler():
             return "", 200
 
-        @self.app.route('/api/raspigpio/on', methods=['GET'])
+        @self.app.route(f'/api/gpio/{self.id}/on', methods=['GET'])
         def turn_on_pin():
-            pin = requests.args.get('pin')
-            duration = requests.args.get('duration', None)
-            if duration is not None:
-                self.gpio_handler.turn_on_for(pin, duration)
-            else:
-                self.gpio_handler.turn_on(pin)
+            duration = request.args.get('duration', None)
+
+            if duration:
+                self.gpio_pin.turn_on_for(int(duration))
+                return "", 200
+            
+            self.gpio_pin.turn_on()
             return "", 200
 
-        @self.app.route('/api/raspigpio/off', methods=['GET'])
+        @self.app.route(f'/api/gpio/{self.id}/off', methods=['GET'])
         def turn_off_pin():
-            pin = requests.args.get('pin')
-            self.gpio_handler.turn_off(id)
+            self.gpio_pin.turn_off()
             return "", 200
-        
+                
 if __name__ == "__main__":
     app = Flask(__name__)
-    server = GPIOHandlerServer(app, 17)
+    server = GPIOPinServer(app, 2, "test")
