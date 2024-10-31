@@ -74,20 +74,20 @@ class GPIOPinServer:
 
         @self.app.route(f'/api/gpio/{self.id}/on', methods=['GET'])
         def turn_on_pin():
-            duration = request.args.get('duration', None)
-
-            if duration:
-                self.gpio_pin.turn_on_for(int(duration))
-                return "", 200
-            
-            self.gpio_pin.turn_on()
+            pin = requests.args.get('pin')
+            duration = requests.args.get('duration', None)
+            if duration is not None:
+                self.gpio_handler.turn_on_for(pin, duration)
+            else:
+                self.gpio_handler.turn_on(pin)
             return "", 200
 
         @self.app.route(f'/api/gpio/{self.id}/off', methods=['GET'])
         def turn_off_pin():
-            self.gpio_pin.turn_off()
+            pin = requests.args.get('pin')
+            self.gpio_handler.turn_off(id)
             return "", 200
-                
+        
 if __name__ == "__main__":
     app = Flask(__name__)
     server = GPIOPinServer(app, 2, "test")
