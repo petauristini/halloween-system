@@ -64,4 +64,11 @@ class GPIOGroup:
     def turn_off(self):
         for pin in self.pins:
             pin.turn_off()
+
+if __name__ == "__main__":
+    pin = GPIOPin("127.0.0.1", 5001, "test")
+    pin2 = GPIOPin("127.0.0.1", 5001, "test2")
+    group = GPIOGroup([pin, pin2])
+    group.turn_on_for(5)
+
     

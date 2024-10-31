@@ -68,24 +68,35 @@ class GPIOPinServer:
         self._setup_routes()
 
     def _setup_routes(self):
-        @self.app.route(f'/api/gpio/{self.id}/ping', methods=['GET'])
-        def ping_gpio_handler():
-            return "", 200
 
-        @self.app.route(f'/api/gpio/{self.id}/on', methods=['GET'])
-        def turn_on_pin():
-            duration = request.args.get('duration', None)
-            if duration is not None:
-                self.gpio_pin.turn_on_for(duration)
-            else:
-                self.gpio_pin.turn_on()
-            return "", 200
+        self.app.route(f'/api/gpio/{self.id}/ping', methods=['GET'], endpoint=f'ping_gpio_{self.id}')(
+            lambda: ("", 200)
+        )
 
-        @self.app.route(f'/api/gpio/{self.id}/off', methods=['GET'])
-        def turn_off_pin():
-            self.gpio_pin.turn_off()
-            return "", 200
+        self.app.route(f'/api/gpio/{self.id}/on', methods=['GET'], endpoint=f'turn_on_gpio_{self.id}')(
+            lambda: self._handle_turn_on()
+        )
+
+        self.app.route(f'/api/gpio/{self.id}/off', methods=['GET'], endpoint=f'turn_off_gpio_{self.id}')(
+            lambda: self._handle_turn_off()
+        )
+
+    def _handle_turn_on(self):
+        duration = request.args.get('duration', None)
+        if duration is not None:
+            self.gpio_pin.turn_on_for(int(duration))
+        else:
+            self.gpio_pin.turn_on()
+        return "", 200
+
+    def _handle_turn_off(self):
+        self.gpio_pin.turn_off()
+        return "", 200
+
+
         
 if __name__ == "__main__":
     app = Flask(__name__)
     server = GPIOPinServer(app, 2, "test")
+    server2 = GPIOPinServer(app, 3, "test2")
+    app.run(debug=True, host='0.0.0.0', port=5001)
