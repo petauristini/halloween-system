@@ -14,13 +14,13 @@ app = Flask(__name__)
 trigger_handler = TriggerHandler(app)
 
 # Audio Players
-audio_player_1 = AudioPlayer('192.168.1.88', 5000)
+audio_player_1 = AudioPlayer('192.168.1.93', 5000)
 audio_player_2 = AudioPlayer('192.168.1.90', 5000)
 audio_player_3 = AudioPlayer('192.168.1.89', 5000)
 all_audio_players = AudioPlayerGroup([audio_player_1, audio_player_2, audio_player_3])
 
 # WLED
-wled_1 = Wled('192.168.1.120')
+wled_1 = Wled('192.168.1.78')
 wled_2 = Wled('192.168.1.121')
 wled_3 = Wled('192.168.1.122')
 all_wleds = WledGroup([wled_1, wled_2, wled_3])
