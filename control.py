@@ -26,9 +26,9 @@ wled_3 = Wled('192.168.1.122')
 all_wleds = WledGroup([wled_1, wled_2, wled_3])
 
 # Smoke Modules
-smoke_module_1 = GPIOPin("192.168.1.130", 5)
-smoke_module_2 = GPIOPin("192.168.1.131", 5)
-smoke_module_3 = GPIOPin("192.168.1.132", 5)
+smoke_module_1 = GPIOPin("192.168.1.130", 5000, "smoke")
+smoke_module_2 = GPIOPin("192.168.1.131", 5000, "smoke")
+smoke_module_3 = GPIOPin("192.168.1.132", 5000, "smoke")
 all_smoke_modules = GPIOGroup([smoke_module_1, smoke_module_2, smoke_module_3])
 
 # Triggers
@@ -53,4 +53,4 @@ trigger_handler.add('stop_audio', deactivate_cooldown=True)
 trigger_handler.add_callback('stop_audio', 'stop_audio_callback', (all_audio_players.stop, ()))
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0', port=7000)
