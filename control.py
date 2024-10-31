@@ -21,7 +21,7 @@ audio_player_3 = AudioPlayer('192.168.1.89', 5000)
 all_audio_players = AudioPlayerGroup([audio_player_1, audio_player_2, audio_player_3])
 
 # Audio Streaming
-outputs = {"raspi-speaker-1": StreamingOutput('192.168.1.93', 5000)}
+outputs = [{"raspi-speaker-1": StreamingOutput('192.168.1.93', 5000)}]
 audio_streaming_control_server = StreamingControlServerRoutes(app, outputs)
 
 # WLED
