@@ -1,13 +1,13 @@
 from flask import Flask
 from audioplayer.server import AudioPlayerServer
 from audiostreaming.output import AudioStreamingOutputServer
-from raspigpio.server import GPIOHandlerServer
+from raspigpio.server import GPIOPinServer
 
 
 app = Flask(__name__)
+
 audio_player = AudioPlayerServer(app)
 streaming_output = AudioStreamingOutputServer(app)
-gpio_handler_server = GPIOHandlerServer(app)
-gpio_handler_server.add(2)
+gpio_pin = GPIOPinServer(app, 2, "smoke")
 
-app.run(debug=True, host='0.0.0.0', port=5001)
+app.run(debug=False, host='0.0.0.0', port=5000)
